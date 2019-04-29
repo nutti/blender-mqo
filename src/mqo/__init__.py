@@ -29,8 +29,15 @@ def register():
     bpy.utils.register_class(ops.BoolPropertyCollection)
     utils.bl_class_registry.BlClassRegistry.register()
 
-    bpy.types.TOPBAR_MT_file_import.append(ops.topbar_mt_file_import_fn)
-    bpy.types.TOPBAR_MT_file_export.append(ops.topbar_mt_file_export_fn)
+    if utils.compatibility.check_version(2, 80, 0) >= 0:
+        file_import_menu_type = bpy.types.TOPBAR_MT_file_import
+        file_export_menu_type = bpy.types.TOPBAR_MT_file_export
+    else:
+        file_import_menu_type = bpy.types.INFO_MT_file_import
+        file_export_menu_type = bpy.types.INFO_MT_file_export
+
+    file_import_menu_type.append(ops.topbar_mt_file_import_fn)
+    file_export_menu_type.append(ops.topbar_mt_file_export_fn)
 
     bpy.types.Scene.dynamic_bool_property = bpy.props.CollectionProperty(type=ops.BoolPropertyCollection)
 
@@ -38,8 +45,15 @@ def register():
 def unregister():
     del bpy.types.Scene.dynamic_bool_property
 
-    bpy.types.TOPBAR_MT_file_export.remove(ops.topbar_mt_file_export_fn)
-    bpy.types.TOPBAR_MT_file_import.remove(ops.topbar_mt_file_import_fn)
+    if utils.compatibility.check_version(2, 80, 0) >= 0:
+        file_import_menu_type = bpy.types.TOPBAR_MT_file_import
+        file_export_menu_type = bpy.types.TOPBAR_MT_file_export
+    else:
+        file_import_menu_type = bpy.types.INFO_MT_file_import
+        file_export_menu_type = bpy.types.INFO_MT_file_export
+
+    file_export_menu_type.remove(ops.topbar_mt_file_export_fn)
+    file_import_menu_type.remove(ops.topbar_mt_file_import_fn)
 
     utils.bl_class_registry.BlClassRegistry.unregister()
     bpy.utils.unregister_class(ops.BoolPropertyCollection)

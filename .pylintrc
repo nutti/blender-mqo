@@ -1,0 +1,19 @@
+[MASTER]
+
+disable=
+    W0511,
+    W0702,
+    C0111,
+    C0302,
+    R0201,
+    R0902,
+    R0903,
+    R0904,
+    R0912,
+    R0914,
+    R0915,
+    F0401
+
+variable-rgx=[a-z_][a-z0-9_]{0,30}$
+argument-rgx=[a-z_][a-z0-9_]{0,30}$
+class-rgx=[A-Z_][a-zA-Z0-9_]+$

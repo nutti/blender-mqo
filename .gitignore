@@ -1,2 +1,4 @@
 .idea/
 *.mqo
+.DS_Store
+__pycache__/

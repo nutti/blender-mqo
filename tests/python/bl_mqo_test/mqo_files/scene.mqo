@@ -1,0 +1,22 @@
+Metasequoia Document
+Format Text Ver 1.1
+
+Scene {
+	pos -37.939121 -22.014061 1500
+	lookat 0 0 0
+	head -0.9100
+	pich 0.6900
+	bank 0.0000
+	ortho 0
+	zoom2 5.0000
+	amb 0.250 0.250 0.250
+	frontclip 225.00002
+	backclip 45000
+	dirlights 1 {
+		light {
+			dir 0.408 0.408 0.816
+			color 1.000 1.000 1.000
+		}
+	}
+}
+Eof
