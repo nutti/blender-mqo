@@ -260,7 +260,7 @@ def menu_exists(idname):
 
 class TestBase(unittest.TestCase):
 
-    package_name = "mqo"
+    package_name = "blender_mqo"
     module_name = ""
     submodule_name = None
     idname = []

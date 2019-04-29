@@ -31,7 +31,7 @@ The features of this add-on are as follows.
 ### Install
 
 1. [Download add-on](https://github.com/nutti/blender-mqo#download).
-2. Unzip the .zip file you downloaded. Then, check if the add-on sources are located on `src/mqo`.
+2. Unzip the .zip file you downloaded. Then, check if the add-on sources are located on `src/blender_mqo`.
 3. Copy add-on sources into your add-on folder.
 4. Enable add-on. The add-on name is **MQO (Metasequoia) format**.
 

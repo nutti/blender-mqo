@@ -23,28 +23,28 @@ jobs:
           command: wget http://mirror.cs.umn.edu/blender.org/release/Blender2.77/blender-2.77-linux-glibc211-x86_64.tar.bz2 && tar jxf blender-2.77-linux-glibc211-x86_64.tar.bz2
       - run:
           name: Copy add-on to Blender add-on's directory
-          command: cp -r src/mqo blender-2.77-linux-glibc211-x86_64/2.77/scripts/addons
+          command: cp -r src/blender_mqo blender-2.77-linux-glibc211-x86_64/2.77/scripts/addons
       - run:
           name: Check pylint
-          command: bash tests/lint/pylint.sh src/mqo
+          command: bash tests/lint/pylint.sh src/blender_mqo
       - run:
           name: Check pep8
-          command: bash tests/lint/pep8.sh src/mqo
+          command: bash tests/lint/pep8.sh src/blender_mqo
       - run:
           name: Run tests
           command: blender-2.77-linux-glibc211-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
       - run:
           name: Download Blender (Blender 2.8)
-          command: wget https://builder.blender.org/download/blender-2.80-d2f1705b15be-linux-glibc224-x86_64.tar.bz2 && tar jxf blender-2.80-d2f1705b15be-linux-glibc224-x86_64.tar.bz2
+          command: wget https://builder.blender.org/download/blender-2.80-337cac760ba9-linux-glibc224-x86_64.tar.bz2 && tar jxf blender-2.80-337cac760ba9-linux-glibc224-x86_64.tar.bz2
       - run:
           name: Copy add-on to Blender add-on's directory (Blender 2.8)
-          command: cp -r src/mqo blender-2.80-d2f1705b15be-linux-glibc224-x86_64/2.80/scripts/addons
+          command: cp -r src/blender_mqo blender-2.80-337cac760ba9-linux-glibc224-x86_64/2.80/scripts/addons
       - run:
           name: Run tests (Blender 2.8)
-          command: blender-2.80-d2f1705b15be-linux-glibc224-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+          command: blender-2.80-337cac760ba9-linux-glibc224-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
       - run:
           name: Compress add-on as .zip file
-          command: mkdir release && zip -r release/mqo.zip src/mqo
+          command: mkdir release && zip -r release/blender_mqo.zip src/blender_mqo
       - store_artifacts:
           path: release
-          destination: mqo
+          destination: blender_mqo

@@ -7,11 +7,11 @@ def test_main():
     path = os.path.dirname(__file__)
     sys.path.append(path)
 
-    import bl_mqo_test
+    import blender_mqo_test
 
     test_cases = [
-        bl_mqo_test.import_test.TestImportMqo,
-        bl_mqo_test.export_test.TestExportMqo,
+        blender_mqo_test.import_test.TestImportMqo,
+        blender_mqo_test.export_test.TestExportMqo,
     ]
 
     suite = unittest.TestSuite()
