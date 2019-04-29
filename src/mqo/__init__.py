@@ -8,7 +8,7 @@ bl_info = {
     "warning": "",
     "support": "COMMUNITY",
     "wiki_url": "",
-    "tracker_url": "https://github.com/nutti/bl-mqo",
+    "tracker_url": "https://github.com/nutti/blender-mqo",
     "category": "Import-Export"
 }
 
@@ -39,7 +39,8 @@ def register():
     file_import_menu_type.append(ops.topbar_mt_file_import_fn)
     file_export_menu_type.append(ops.topbar_mt_file_export_fn)
 
-    bpy.types.Scene.dynamic_bool_property = bpy.props.CollectionProperty(type=ops.BoolPropertyCollection)
+    bpy.types.Scene.dynamic_bool_property = bpy.props.CollectionProperty(
+        type=ops.BoolPropertyCollection)
 
 
 def unregister():
