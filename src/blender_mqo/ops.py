@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 import bmesh
 import bpy
@@ -59,17 +60,25 @@ def import_material_v280(mqo_mtrl, filepath):
     new_image = None
     if mqo_mtrl.texture_map is not None:
         # open image
-        image_path = "{}/{}".format(os.path.dirname(filepath),
-                                    mqo_mtrl.texture_map)
-        new_image = bpy.data.images.load(image_path)
+        path = pathlib.Path(mqo_mtrl.texture_map)
+        if path.is_absolute():
+            image_path = path
+        else:
+            image_path = "{}/{}".format(os.path.dirname(filepath),
+                                        mqo_mtrl.texture_map)
+            if not pathlib.Path(image_path).exists():
+                image_path = "C:/Program Files/tetraface/Metasequoia4/Texture/"+mqo_mtrl.texture_map
+        if pathlib.Path(image_path).exists():
+            new_image = bpy.data.images.load(image_path)
 
-        # make texture node
-        texture_node = new_mtrl.node_tree.nodes.new("ShaderNodeTexImage")
-        texture_node.image = new_image
-        texture_node.projection = MQO_TO_BLENDER_PROJECTION_TYPE[
-            mqo_mtrl.projection_type]
-        new_mtrl.node_tree.links.new(output_node.inputs["Surface"],
-                                     texture_node.outputs["Color"])
+            # make texture node
+            texture_node = new_mtrl.node_tree.nodes.new("ShaderNodeTexImage")
+            texture_node.image = new_image
+            if mqo_mtrl.projection_type is not None:
+                texture_node.projection = MQO_TO_BLENDER_PROJECTION_TYPE[
+                    mqo_mtrl.projection_type]
+            new_mtrl.node_tree.links.new(output_node.inputs["Surface"],
+                                        texture_node.outputs["Color"])
     else:
         # make specular node
         specular_node = new_mtrl.node_tree.nodes.new("ShaderNodeEeveeSpecular")
