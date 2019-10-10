@@ -1004,7 +1004,7 @@ class Object:
 
     def get_faces(self, uniq=False):
         if uniq is False:
-            return self._faces
+            return [face for face in self._faces if face.ngons > 2]
 
         faces = []
         for f1 in self._faces:
@@ -1015,7 +1015,7 @@ class Object:
             else:
                 faces.append(f1)
 
-        return faces
+        return [f for f in faces if f.ngons > 2]
 
     def is_same(self, other, allowable_error=ALLOWABLE_ERROR):
         self_keys = list(self.__dict__.keys())
