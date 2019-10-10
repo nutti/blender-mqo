@@ -1581,7 +1581,7 @@ class MqoFile:
 
             result = parse(line, rb"[0-9]+.* COL\(([0-9 ]+)\)")
             if result:
-                face.colors = [int(c) for c in result[0].split(" ")]
+                face.colors = [int(c) for c in decode(result[0]).split(" ")]
                 if face.ngons != len(face.colors):
                     raise RuntimeError("Number of Colors does not match "
                                        "(expects {}, but {}"
@@ -1589,7 +1589,7 @@ class MqoFile:
 
             result = parse(line, rb"[0-9]+.* CRS\(([0-9\. ]+)\)")
             if result:
-                face.crs = [float(c) for c in result[0].split(" ")]
+                face.crs = [float(c) for c in decode(result[0]).split(" ")]
                 if face.ngons != len(face.crs):
                     raise RuntimeError("Number of CRS does not match "
                                        "(expects {}, but {}"
