@@ -73,6 +73,7 @@ def import_material_v280(mqo_mtrl, filepath):
 
             # make texture node
             texture_node = new_mtrl.node_tree.nodes.new("ShaderNodeTexImage")
+            texture_node.location[1] = output_node.location[1]
             texture_node.image = new_image
             if mqo_mtrl.projection_type is not None:
                 texture_node.projection = MQO_TO_BLENDER_PROJECTION_TYPE[
@@ -82,6 +83,7 @@ def import_material_v280(mqo_mtrl, filepath):
     else:
         # make specular node
         specular_node = new_mtrl.node_tree.nodes.new("ShaderNodeEeveeSpecular")
+        specular_node.location[1] = output_node.location[1]
         specular_node.inputs["Base Color"].default_value = mqo_mtrl.color
         specular_node.inputs["Specular"].default_value = [
             mqo_mtrl.specular, mqo_mtrl.specular, mqo_mtrl.specular,
