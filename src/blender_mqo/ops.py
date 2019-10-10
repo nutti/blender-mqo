@@ -276,20 +276,26 @@ def import_object(mqo_obj, materials):
     if mqo_obj.mirror is not None:
         if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] != 'NONE':
             bpy.ops.object.modifier_add(type='MIRROR')
-            axis_index = MQO_TO_BLENDER_MIRROR_AXIS_INDEX[mqo_obj.mirror_axis]
+            # axis_index = MQO_TO_BLENDER_MIRROR_AXIS_INDEX[mqo_obj.mirror_axis]
+            axis_index = mqo_obj.mirror_axis
             if compat.check_version(2, 80, 0) >= 0:
                 for i in new_obj.modifiers["Mirror"].use_axis:
                     new_obj.modifiers["Mirror"].use_axis[i] = False
-                new_obj.modifiers["Mirror"].use_axis[axis_index] = True
+                if axis_index & 0x1:    
+                    new_obj.modifiers["Mirror"].use_axis[0] = True
+                if axis_index & 0x2:    
+                    new_obj.modifiers["Mirror"].use_axis[1] = True
+                if axis_index & 0x4:    
+                    new_obj.modifiers["Mirror"].use_axis[2] = True
             else:
                 new_obj.modifiers["Mirror"].use_x = False
                 new_obj.modifiers["Mirror"].use_y = False
                 new_obj.modifiers["Mirror"].use_z = False
-                if axis_index == 0:
+                if axis_index & 0x1:
                     new_obj.modifiers["Mirror"].use_x = True
-                elif axis_index == 1:
+                if axis_index & 0x2:
                     new_obj.modifiers["Mirror"].use_y = True
-                elif axis_index == 2:
+                if axis_index & 0x4:
                     new_obj.modifiers["Mirror"].use_z = True
 
     return new_obj

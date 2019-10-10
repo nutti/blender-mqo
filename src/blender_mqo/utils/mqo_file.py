@@ -1671,7 +1671,7 @@ class MqoFile:
                 rgx = rb"mirror ([0-2])"
                 obj.mirror = int(parse(line, rgx)[0])
             elif line.find(b"mirror_axis ") != -1:
-                rgx = rb"mirror_axis ([0-4])"
+                rgx = rb"mirror_axis ([1-7])"
                 obj.mirror_axis = int(parse(line, rgx)[0])
             elif line.find(b"mirror_dis ") != -1:
                 rgx = rb"mirror_dis ([0-9\.]+)"
