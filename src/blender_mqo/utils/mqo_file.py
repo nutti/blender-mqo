@@ -1298,7 +1298,7 @@ class MqoFile:
                 return light
 
             if line.find(b"dir") != -1:
-                rgx = rb"dir ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
+                rgx = rb"dir ([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)"
                 light.dir = [float(s) for s in parse(line, rgx)]
             elif line.find(b"color") != -1:
                 rgx = rb"color ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
