@@ -169,7 +169,7 @@ def import_object(mqo_obj, materials):
         if face.uv_coords is not None:
             for j in range(face.ngons):
                 bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
-
+                bm_face.loops[j][uv_layer].uv[1] = 1 - bm_face.loops[j][uv_layer].uv[1]
         bm_faces.append(bm_face)
 
     bm.to_mesh(new_mesh)
