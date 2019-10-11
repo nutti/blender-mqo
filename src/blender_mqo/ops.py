@@ -1,5 +1,6 @@
 import os
 import pathlib
+import math
 
 import bmesh
 import bpy
@@ -299,7 +300,8 @@ def import_object(mqo_obj, materials):
                     new_obj.modifiers["Mirror"].use_y = True
                 if axis_index & 0x4:
                     new_obj.modifiers["Mirror"].use_z = True
-
+    new_obj.delta_rotation_euler = (math.radians(90), 0, 0)
+    new_obj.delta_scale = (0.01, 0.01, 0.01)
     return new_obj
 
 
