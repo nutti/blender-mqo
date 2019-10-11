@@ -63,7 +63,7 @@ def import_material_v280(mqo_mtrl, filepath):
         # open image
         path = pathlib.Path(mqo_mtrl.texture_map)
         if path.is_absolute():
-            image_path = path
+            image_path = str(path)
         else:
             image_path = "{}/{}".format(os.path.dirname(filepath),
                                         mqo_mtrl.texture_map)
