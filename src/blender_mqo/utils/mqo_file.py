@@ -18,6 +18,12 @@ class RawData:
         self.seek = end
 
         return self.data[start:end]
+    
+    def read(self, num_bytes):
+        start = self.seek
+        end = start + num_bytes
+        self.seek = end
+        return self.data[start:end]
 
     def eof(self):
         return len(self.data) == self.seek
@@ -1518,6 +1524,39 @@ class MqoFile:
 
         raise RuntimeError("Format Error: Failed to parse 'vertex' field.")
 
+    def _parse_BVertex(self, first_line):
+        r = re.compile(rb"BVertex ([0-9]+) {")
+        m = r.search(first_line)
+        if not m or len(m.groups()) != 1:
+            raise RuntimeError("Invalid format. (line:{})".format(first_line))
+
+        num_verts = int(m.group(1))
+        verts = []
+        bracecount = 1
+        import struct
+        while not self._raw.eof():
+            line = self._raw.get_line()
+            line = remove_return(line)
+            line = line.strip()
+
+            if line.find(b"{") != -1:
+                bracecount += 1
+
+            if line.find(b"}") != -1:
+                bracecount -= 1
+                if bracecount == 0:
+                    if num_verts != len(verts):
+                        raise RuntimeError("Number of Vertices does not match "
+                                        "(expects {}, but {})"
+                                        .format(num_verts, len(verts)))
+                    return verts
+            if not verts:
+                for i in range(num_verts):
+                    x, y, z = struct.unpack("<fff", self._raw.read(3*4))    
+                    verts.append([x, y, z])
+
+        raise RuntimeError("Format Error: Failed to parse 'vertex' field.")
+
     def _parse_face(self, first_line):
         r = re.compile(rb"face ([0-9]+) {")
         m = r.search(first_line)
@@ -1620,6 +1659,8 @@ class MqoFile:
             line = line.strip()
 
             if line.find(b"}") != -1:
+                if obj.mirror and not obj.mirror_axis:
+                    obj.mirror_axis = 1 
                 return obj
 
             if line.find(b"uid ") != -1:
@@ -1688,7 +1729,8 @@ class MqoFile:
             elif line.find(b"vertex ") != -1:
                 obj.add_vertices(self._parse_vertex(line))
             elif line.find(b"BVertex ") != -1:
-                raise RuntimeError("BVertex is not supported.")
+                obj.add_vertices(self._parse_BVertex(line))
+                #raise RuntimeError("BVertex is not supported.")
             elif line.find(b"face ") != -1:
                 obj.add_faces(self._parse_face(line))
             elif line.find(b"normal_weight ") != -1:
