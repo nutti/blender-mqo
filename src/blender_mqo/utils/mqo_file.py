@@ -1803,7 +1803,7 @@ class MqoFile:
                 self._parse_thumbnail(line)
             elif line.find(b"Scene") != -1:
                 self._scene = self._parse_scene(line)
-            elif line.find(b"Material") != -1:
+            elif line.find(b"Material ") != -1:
                 self._materials = self._parse_material(line)
             elif line.find(b"Object") != -1:
                 self._objects.append(self._parse_object(line))
