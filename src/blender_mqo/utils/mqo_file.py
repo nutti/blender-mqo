@@ -1555,7 +1555,7 @@ class MqoFile:
                     x, y, z = struct.unpack("<fff", self._raw.read(3*4))    
                     verts.append([x, y, z])
 
-        raise RuntimeError("Format Error: Failed to parse 'vertex' field.")
+        raise RuntimeError("Format Error: Failed to parse 'BVertex' field.")
 
     def _parse_face(self, first_line):
         r = re.compile(rb"face ([0-9]+) {")
@@ -1737,9 +1737,21 @@ class MqoFile:
                 rgx = rb"normal_weight ([0-9\.]+)"
                 obj.normal_weight = float(parse(line, rgx)[0])
             elif line.find(b"vertexattr ") != -1:
-                raise RuntimeError("vertexattr is not supported.")
+                print("vertexattr chunk is not supported.")
+                self._skip_chunk()
+                # raise RuntimeError("vertexattr is not supported.")
 
         raise RuntimeError("Format Error: Failed to parse 'Object' field.")
+
+    def _skip_chunk(self):
+        while not self._raw.eof():
+            line = self._raw.get_line()
+            line = remove_return(line)
+            line = line.strip()
+            if line.find(b"{") != -1:
+                self._skip_chunk()
+            if line.find(b"}") != -1:
+                break
 
     def _parse_header(self, line):
         if line != b"Metasequoia Document":
