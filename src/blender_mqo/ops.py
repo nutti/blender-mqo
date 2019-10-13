@@ -603,7 +603,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     bl_options = {'REGISTER', 'UNDO'}
 
     filename_ext = ".mqo"
-    filter_glob = StringProperty(default="*.mqo")
+    filter_glob = StringProperty(default="*.mqo;*.mqoz")
 
     import_objects = BoolProperty(name="Import Objects", default=True)
     import_materials = BoolProperty(name="Import Materials", default=True)

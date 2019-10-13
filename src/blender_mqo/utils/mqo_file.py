@@ -1782,8 +1782,20 @@ class MqoFile:
         return decode(m.group(1))
 
     def load(self, filepath):
-        with open(filepath, "rb") as f:
-            self._raw = RawData(f.read())
+        import pathlib
+        if pathlib.Path(filepath).suffix.lower() == ".mqo":
+            with open(filepath, "rb") as f:
+                self._raw = RawData(f.read())
+        else:
+            import zipfile
+            with zipfile.ZipFile(filepath) as zfile:
+                for zinfo in zfile.infolist():
+                    if pathlib.Path(zinfo.filename).suffix.lower() == ".mqo":
+                        break
+                else:
+                    raise RuntimeError("No *.mqo found in {}".format(filepath))
+                with zfile.open(zinfo) as f:
+                    self._raw = RawData(f.read())
 
         while not self._raw.eof():
             line = self._raw.get_line()
