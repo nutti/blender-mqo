@@ -1676,7 +1676,7 @@ class MqoFile:
                 rgx = rb"scale ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
                 obj.scale = [float(v) for v in parse(line, rgx)]
             elif line.find(b"rotation ") != -1:
-                rgx = rb"rotation ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
+                rgx = rb"rotation ([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)"
                 obj.rotation = [float(v) for v in parse(line, rgx)]
             elif line.find(b"translation ") != -1:
                 rgx = rb"translation ([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)"
