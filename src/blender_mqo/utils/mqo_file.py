@@ -1794,7 +1794,7 @@ class MqoFile:
 
             if line.find(b"TrialNoise") != -1:
                 self._parse_trial_noise(line)
-                raise RuntimeError("The file with TrialNoise chuck "
+                raise RuntimeError("The file with TrialNoise chunk "
                                    "is not supported.")
             elif line.find(b"IncludeXml") != -1:
                 xml_name = self._parse_include_xml(line)
