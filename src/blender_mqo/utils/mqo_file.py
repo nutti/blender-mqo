@@ -1762,7 +1762,7 @@ class MqoFile:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
 
     def _parse_include_xml(self, first_line):
-        pattern = rb"IncludeXml \".+\""
+        pattern = rb"(IncludeXml \".+\")"
         r = re.compile(pattern)
         m = r.search(first_line)
         if not m or len(m.groups()) != 1:
