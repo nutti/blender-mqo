@@ -1,4 +1,6 @@
 import os
+import pathlib
+import math
 
 import bmesh
 import bpy
@@ -59,20 +61,30 @@ def import_material_v280(mqo_mtrl, filepath):
     new_image = None
     if mqo_mtrl.texture_map is not None:
         # open image
-        image_path = "{}/{}".format(os.path.dirname(filepath),
-                                    mqo_mtrl.texture_map)
-        new_image = bpy.data.images.load(image_path)
+        path = pathlib.Path(mqo_mtrl.texture_map)
+        if path.is_absolute():
+            image_path = str(path)
+        else:
+            image_path = "{}/{}".format(os.path.dirname(filepath),
+                                        mqo_mtrl.texture_map)
+            if not pathlib.Path(image_path).exists():
+                image_path = "C:/Program Files/tetraface/Metasequoia4/Texture/"+mqo_mtrl.texture_map
+        if pathlib.Path(image_path).exists():
+            new_image = bpy.data.images.load(image_path)
 
-        # make texture node
-        texture_node = new_mtrl.node_tree.nodes.new("ShaderNodeTexImage")
-        texture_node.image = new_image
-        texture_node.projection = MQO_TO_BLENDER_PROJECTION_TYPE[
-            mqo_mtrl.projection_type]
-        new_mtrl.node_tree.links.new(output_node.inputs["Surface"],
-                                     texture_node.outputs["Color"])
+            # make texture node
+            texture_node = new_mtrl.node_tree.nodes.new("ShaderNodeTexImage")
+            texture_node.location[1] = output_node.location[1]
+            texture_node.image = new_image
+            if mqo_mtrl.projection_type is not None:
+                texture_node.projection = MQO_TO_BLENDER_PROJECTION_TYPE[
+                    mqo_mtrl.projection_type]
+            new_mtrl.node_tree.links.new(output_node.inputs["Surface"],
+                                        texture_node.outputs["Color"])
     else:
         # make specular node
         specular_node = new_mtrl.node_tree.nodes.new("ShaderNodeEeveeSpecular")
+        specular_node.location[1] = output_node.location[1]
         specular_node.inputs["Base Color"].default_value = mqo_mtrl.color
         specular_node.inputs["Specular"].default_value = [
             mqo_mtrl.specular, mqo_mtrl.specular, mqo_mtrl.specular,
@@ -160,7 +172,7 @@ def import_object(mqo_obj, materials):
         if face.uv_coords is not None:
             for j in range(face.ngons):
                 bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
-
+                bm_face.loops[j][uv_layer].uv[1] = 1 - bm_face.loops[j][uv_layer].uv[1]
         bm_faces.append(bm_face)
 
     bm.to_mesh(new_mesh)
@@ -267,22 +279,29 @@ def import_object(mqo_obj, materials):
     if mqo_obj.mirror is not None:
         if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] != 'NONE':
             bpy.ops.object.modifier_add(type='MIRROR')
-            axis_index = MQO_TO_BLENDER_MIRROR_AXIS_INDEX[mqo_obj.mirror_axis]
+            # axis_index = MQO_TO_BLENDER_MIRROR_AXIS_INDEX[mqo_obj.mirror_axis]
+            axis_index = mqo_obj.mirror_axis
             if compat.check_version(2, 80, 0) >= 0:
                 for i in new_obj.modifiers["Mirror"].use_axis:
                     new_obj.modifiers["Mirror"].use_axis[i] = False
-                new_obj.modifiers["Mirror"].use_axis[axis_index] = True
+                if axis_index & 0x1:    
+                    new_obj.modifiers["Mirror"].use_axis[0] = True
+                if axis_index & 0x2:    
+                    new_obj.modifiers["Mirror"].use_axis[1] = True
+                if axis_index & 0x4:    
+                    new_obj.modifiers["Mirror"].use_axis[2] = True
             else:
                 new_obj.modifiers["Mirror"].use_x = False
                 new_obj.modifiers["Mirror"].use_y = False
                 new_obj.modifiers["Mirror"].use_z = False
-                if axis_index == 0:
+                if axis_index & 0x1:
                     new_obj.modifiers["Mirror"].use_x = True
-                elif axis_index == 1:
+                if axis_index & 0x2:
                     new_obj.modifiers["Mirror"].use_y = True
-                elif axis_index == 2:
+                if axis_index & 0x4:
                     new_obj.modifiers["Mirror"].use_z = True
-
+    new_obj.delta_rotation_euler = (math.radians(90), 0, 0)
+    new_obj.delta_scale = (0.01, 0.01, 0.01)
     return new_obj
 
 
@@ -584,7 +603,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     bl_options = {'REGISTER', 'UNDO'}
 
     filename_ext = ".mqo"
-    filter_glob = StringProperty(default="*.mqo")
+    filter_glob = StringProperty(default="*.mqo;*.mqoz")
 
     import_objects = BoolProperty(name="Import Objects", default=True)
     import_materials = BoolProperty(name="Import Materials", default=True)

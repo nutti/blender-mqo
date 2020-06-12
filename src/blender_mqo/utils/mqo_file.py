@@ -18,6 +18,12 @@ class RawData:
         self.seek = end
 
         return self.data[start:end]
+    
+    def read(self, num_bytes):
+        start = self.seek
+        end = start + num_bytes
+        self.seek = end
+        return self.data[start:end]
 
     def eof(self):
         return len(self.data) == self.seek
@@ -1004,7 +1010,7 @@ class Object:
 
     def get_faces(self, uniq=False):
         if uniq is False:
-            return self._faces
+            return [face for face in self._faces if face.ngons > 2]
 
         faces = []
         for f1 in self._faces:
@@ -1015,7 +1021,7 @@ class Object:
             else:
                 faces.append(f1)
 
-        return faces
+        return [f for f in faces if f.ngons > 2]
 
     def is_same(self, other, allowable_error=ALLOWABLE_ERROR):
         self_keys = list(self.__dict__.keys())
@@ -1298,7 +1304,7 @@ class MqoFile:
                 return light
 
             if line.find(b"dir") != -1:
-                rgx = rb"dir ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
+                rgx = rb"dir ([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)"
                 light.dir = [float(s) for s in parse(line, rgx)]
             elif line.find(b"color") != -1:
                 rgx = rb"color ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
@@ -1518,6 +1524,39 @@ class MqoFile:
 
         raise RuntimeError("Format Error: Failed to parse 'vertex' field.")
 
+    def _parse_BVertex(self, first_line):
+        r = re.compile(rb"BVertex ([0-9]+) {")
+        m = r.search(first_line)
+        if not m or len(m.groups()) != 1:
+            raise RuntimeError("Invalid format. (line:{})".format(first_line))
+
+        num_verts = int(m.group(1))
+        verts = []
+        bracecount = 1
+        import struct
+        while not self._raw.eof():
+            line = self._raw.get_line()
+            line = remove_return(line)
+            line = line.strip()
+
+            if line.find(b"{") != -1:
+                bracecount += 1
+
+            if line.find(b"}") != -1:
+                bracecount -= 1
+                if bracecount == 0:
+                    if num_verts != len(verts):
+                        raise RuntimeError("Number of Vertices does not match "
+                                        "(expects {}, but {})"
+                                        .format(num_verts, len(verts)))
+                    return verts
+            if not verts:
+                for i in range(num_verts):
+                    x, y, z = struct.unpack("<fff", self._raw.read(3*4))    
+                    verts.append([x, y, z])
+
+        raise RuntimeError("Format Error: Failed to parse 'BVertex' field.")
+
     def _parse_face(self, first_line):
         r = re.compile(rb"face ([0-9]+) {")
         m = r.search(first_line)
@@ -1581,7 +1620,7 @@ class MqoFile:
 
             result = parse(line, rb"[0-9]+.* COL\(([0-9 ]+)\)")
             if result:
-                face.colors = [int(c) for c in result[0].split(" ")]
+                face.colors = [int(c) for c in decode(result[0]).split(" ")]
                 if face.ngons != len(face.colors):
                     raise RuntimeError("Number of Colors does not match "
                                        "(expects {}, but {}"
@@ -1589,7 +1628,7 @@ class MqoFile:
 
             result = parse(line, rb"[0-9]+.* CRS\(([0-9\. ]+)\)")
             if result:
-                face.crs = [float(c) for c in result[0].split(" ")]
+                face.crs = [float(c) for c in decode(result[0]).split(" ")]
                 if face.ngons != len(face.crs):
                     raise RuntimeError("Number of CRS does not match "
                                        "(expects {}, but {}"
@@ -1620,6 +1659,8 @@ class MqoFile:
             line = line.strip()
 
             if line.find(b"}") != -1:
+                if obj.mirror and not obj.mirror_axis:
+                    obj.mirror_axis = 1 
                 return obj
 
             if line.find(b"uid ") != -1:
@@ -1635,7 +1676,7 @@ class MqoFile:
                 rgx = rb"scale ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
                 obj.scale = [float(v) for v in parse(line, rgx)]
             elif line.find(b"rotation ") != -1:
-                rgx = rb"rotation ([0-9\.]+) ([0-9\.]+) ([0-9\.]+)"
+                rgx = rb"rotation ([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)"
                 obj.rotation = [float(v) for v in parse(line, rgx)]
             elif line.find(b"translation ") != -1:
                 rgx = rb"translation ([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)"
@@ -1671,7 +1712,7 @@ class MqoFile:
                 rgx = rb"mirror ([0-2])"
                 obj.mirror = int(parse(line, rgx)[0])
             elif line.find(b"mirror_axis ") != -1:
-                rgx = rb"mirror_axis ([0-4])"
+                rgx = rb"mirror_axis ([1-7])"
                 obj.mirror_axis = int(parse(line, rgx)[0])
             elif line.find(b"mirror_dis ") != -1:
                 rgx = rb"mirror_dis ([0-9\.]+)"
@@ -1688,16 +1729,29 @@ class MqoFile:
             elif line.find(b"vertex ") != -1:
                 obj.add_vertices(self._parse_vertex(line))
             elif line.find(b"BVertex ") != -1:
-                raise RuntimeError("BVertex is not supported.")
+                obj.add_vertices(self._parse_BVertex(line))
+                #raise RuntimeError("BVertex is not supported.")
             elif line.find(b"face ") != -1:
                 obj.add_faces(self._parse_face(line))
             elif line.find(b"normal_weight ") != -1:
                 rgx = rb"normal_weight ([0-9\.]+)"
                 obj.normal_weight = float(parse(line, rgx)[0])
             elif line.find(b"vertexattr ") != -1:
-                raise RuntimeError("vertexattr is not supported.")
+                print("vertexattr chunk is not supported.")
+                self._skip_chunk()
+                # raise RuntimeError("vertexattr is not supported.")
 
         raise RuntimeError("Format Error: Failed to parse 'Object' field.")
+
+    def _skip_chunk(self):
+        while not self._raw.eof():
+            line = self._raw.get_line()
+            line = remove_return(line)
+            line = line.strip()
+            if line.find(b"{") != -1:
+                self._skip_chunk()
+            if line.find(b"}") != -1:
+                break
 
     def _parse_header(self, line):
         if line != b"Metasequoia Document":
@@ -1720,7 +1774,7 @@ class MqoFile:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
 
     def _parse_include_xml(self, first_line):
-        pattern = rb"IncludeXml \".+\""
+        pattern = rb"IncludeXml \"(.+)\""
         r = re.compile(pattern)
         m = r.search(first_line)
         if not m or len(m.groups()) != 1:
@@ -1728,8 +1782,20 @@ class MqoFile:
         return decode(m.group(1))
 
     def load(self, filepath):
-        with open(filepath, "rb") as f:
-            self._raw = RawData(f.read())
+        import pathlib
+        if pathlib.Path(filepath).suffix.lower() == ".mqo":
+            with open(filepath, "rb") as f:
+                self._raw = RawData(f.read())
+        else:
+            import zipfile
+            with zipfile.ZipFile(filepath) as zfile:
+                for zinfo in zfile.infolist():
+                    if pathlib.Path(zinfo.filename).suffix.lower() == ".mqo":
+                        break
+                else:
+                    raise RuntimeError("No *.mqo found in {}".format(filepath))
+                with zfile.open(zinfo) as f:
+                    self._raw = RawData(f.read())
 
         while not self._raw.eof():
             line = self._raw.get_line()
@@ -1752,7 +1818,7 @@ class MqoFile:
 
             if line.find(b"TrialNoise") != -1:
                 self._parse_trial_noise(line)
-                raise RuntimeError("The file with TrialNoise chuck "
+                raise RuntimeError("The file with TrialNoise chunk "
                                    "is not supported.")
             elif line.find(b"IncludeXml") != -1:
                 xml_name = self._parse_include_xml(line)
@@ -1761,7 +1827,7 @@ class MqoFile:
                 self._parse_thumbnail(line)
             elif line.find(b"Scene") != -1:
                 self._scene = self._parse_scene(line)
-            elif line.find(b"Material") != -1:
+            elif line.find(b"Material ") != -1:
                 self._materials = self._parse_material(line)
             elif line.find(b"Object") != -1:
                 self._objects.append(self._parse_object(line))
