@@ -2,7 +2,7 @@ import os
 
 import bpy
 
-from mqo.utils.mqo_file import MqoFile
+from blender_mqo.utils.mqo_file import MqoFile
 from . import common
 
 

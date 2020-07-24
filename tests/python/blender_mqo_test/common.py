@@ -171,8 +171,11 @@ def valid_uvs(bl_obj, mqo_obj):
         bl_uvs = [[l[uv_layer].uv[0], l[uv_layer].uv[1]]
                   for l in bl_face.loops]
         for bl_uv, mqo_uv in zip(bl_uvs, mqo_face.uv_coords):
-            if not is_v2_same(bl_uv, mqo_uv):
-                print("UV coords do not match {} vs {}" .format(bl_uv, mqo_uv))
+            # Metasequoia V-coordinate need to be inverted for meeting Blender V-coordinate.
+            mqo_uv_corrected = mqo_uv.copy()
+            mqo_uv_corrected[1] = 1 - mqo_uv_corrected[1]
+            if not is_v2_same(bl_uv, mqo_uv_corrected):
+                print("UV coords do not match {} vs {}" .format(bl_uv, mqo_uv_corrected))
                 return False
 
     return True

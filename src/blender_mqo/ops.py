@@ -68,7 +68,9 @@ def import_material_v280(mqo_mtrl, filepath):
             image_path = "{}/{}".format(os.path.dirname(filepath),
                                         mqo_mtrl.texture_map)
             if not pathlib.Path(image_path).exists():
-                image_path = "C:/Program Files/tetraface/Metasequoia4/Texture/"+mqo_mtrl.texture_map
+                image_path = \
+                    "C:/Program Files/tetraface/Metasequoia4/Texture/" + \
+                    mqo_mtrl.texture_map
         if pathlib.Path(image_path).exists():
             new_image = bpy.data.images.load(image_path)
 
@@ -80,7 +82,7 @@ def import_material_v280(mqo_mtrl, filepath):
                 texture_node.projection = MQO_TO_BLENDER_PROJECTION_TYPE[
                     mqo_mtrl.projection_type]
             new_mtrl.node_tree.links.new(output_node.inputs["Surface"],
-                                        texture_node.outputs["Color"])
+                                         texture_node.outputs["Color"])
     else:
         # make specular node
         specular_node = new_mtrl.node_tree.nodes.new("ShaderNodeEeveeSpecular")
@@ -103,8 +105,8 @@ def import_material_v280(mqo_mtrl, filepath):
 def import_material(mqo_mtrl, filepath):
     if compat.check_version(2, 80, 0) >= 0:
         return import_material_v280(mqo_mtrl, filepath)
-    else:
-        return import_material_v279(mqo_mtrl, filepath)
+
+    return import_material_v279(mqo_mtrl, filepath)
 
 
 def import_materials(mqo_file, filepath, exclude_materials):
@@ -172,7 +174,8 @@ def import_object(mqo_obj, materials):
         if face.uv_coords is not None:
             for j in range(face.ngons):
                 bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
-                bm_face.loops[j][uv_layer].uv[1] = 1 - bm_face.loops[j][uv_layer].uv[1]
+                bm_face.loops[j][uv_layer].uv[1] = \
+                    1 - bm_face.loops[j][uv_layer].uv[1]
         bm_faces.append(bm_face)
 
     bm.to_mesh(new_mesh)
@@ -279,16 +282,15 @@ def import_object(mqo_obj, materials):
     if mqo_obj.mirror is not None:
         if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] != 'NONE':
             bpy.ops.object.modifier_add(type='MIRROR')
-            # axis_index = MQO_TO_BLENDER_MIRROR_AXIS_INDEX[mqo_obj.mirror_axis]
             axis_index = mqo_obj.mirror_axis
             if compat.check_version(2, 80, 0) >= 0:
                 for i in new_obj.modifiers["Mirror"].use_axis:
                     new_obj.modifiers["Mirror"].use_axis[i] = False
-                if axis_index & 0x1:    
+                if axis_index & 0x1:
                     new_obj.modifiers["Mirror"].use_axis[0] = True
-                if axis_index & 0x2:    
+                if axis_index & 0x2:
                     new_obj.modifiers["Mirror"].use_axis[1] = True
-                if axis_index & 0x4:    
+                if axis_index & 0x4:
                     new_obj.modifiers["Mirror"].use_axis[2] = True
             else:
                 new_obj.modifiers["Mirror"].use_x = False
@@ -382,13 +384,12 @@ def export_material_v280(mqo_file, material):
 def export_material(mqo_file, material):
     if compat.check_version(2, 80, 0) >= 0:
         return export_material_v280(mqo_file, material)
-    else:
-        return export_material_v279(mqo_file, material)
+
+    return export_material_v279(mqo_file, material)
 
 
 def export_materials(mqo_file, exclude_materials):
-    materials_to_export = [mtrl for mtrl in bpy.data.materials]
-    for mtrl in materials_to_export:
+    for mtrl in bpy.data.materials:
         if mtrl.name in exclude_materials:
             continue
         export_material(mqo_file, mtrl)
@@ -534,7 +535,7 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
                     if mqo_face.uv_coords is None:
                         mqo_face.uv_coords = []
                     mqo_face.uv_coords.append([l[uv_layer].uv[0],
-                                               l[uv_layer].uv[1]])
+                                               1 - l[uv_layer].uv[1]])
             mqo_obj.add_face(mqo_face)
 
         # materials

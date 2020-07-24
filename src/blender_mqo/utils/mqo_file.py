@@ -1,5 +1,8 @@
 import re
 import math
+import struct
+import pathlib
+import zipfile
 
 
 ALLOWABLE_ERROR = 1e-5
@@ -18,7 +21,7 @@ class RawData:
         self.seek = end
 
         return self.data[start:end]
-    
+
     def read(self, num_bytes):
         start = self.seek
         end = start + num_bytes
@@ -57,9 +60,9 @@ def decode(str_):
 def is_same(var1, var2, allowable_erorr=ALLOWABLE_ERROR):
     if (var1 is None) and (var2 is None):
         return True
-    elif type(var1) != type(var2):  # pylint: disable=unidiomatic-typecheck
+    if type(var1) != type(var2):  # pylint: disable=unidiomatic-typecheck
         return False
-    elif isinstance(var1, int) and isinstance(var2, int):
+    if isinstance(var1, int) and isinstance(var2, int):
         if var1 != var2:
             return False
     elif isinstance(var1, float) and isinstance(var2, float):
@@ -1524,7 +1527,7 @@ class MqoFile:
 
         raise RuntimeError("Format Error: Failed to parse 'vertex' field.")
 
-    def _parse_BVertex(self, first_line):
+    def _parse_bvertex(self, first_line):
         r = re.compile(rb"BVertex ([0-9]+) {")
         m = r.search(first_line)
         if not m or len(m.groups()) != 1:
@@ -1533,7 +1536,6 @@ class MqoFile:
         num_verts = int(m.group(1))
         verts = []
         bracecount = 1
-        import struct
         while not self._raw.eof():
             line = self._raw.get_line()
             line = remove_return(line)
@@ -1547,12 +1549,12 @@ class MqoFile:
                 if bracecount == 0:
                     if num_verts != len(verts):
                         raise RuntimeError("Number of Vertices does not match "
-                                        "(expects {}, but {})"
-                                        .format(num_verts, len(verts)))
+                                           "(expects {}, but {})"
+                                           .format(num_verts, len(verts)))
                     return verts
             if not verts:
-                for i in range(num_verts):
-                    x, y, z = struct.unpack("<fff", self._raw.read(3*4))    
+                for _ in range(num_verts):
+                    x, y, z = struct.unpack("<fff", self._raw.read(3*4))
                     verts.append([x, y, z])
 
         raise RuntimeError("Format Error: Failed to parse 'BVertex' field.")
@@ -1660,7 +1662,7 @@ class MqoFile:
 
             if line.find(b"}") != -1:
                 if obj.mirror and not obj.mirror_axis:
-                    obj.mirror_axis = 1 
+                    obj.mirror_axis = 1
                 return obj
 
             if line.find(b"uid ") != -1:
@@ -1729,8 +1731,7 @@ class MqoFile:
             elif line.find(b"vertex ") != -1:
                 obj.add_vertices(self._parse_vertex(line))
             elif line.find(b"BVertex ") != -1:
-                obj.add_vertices(self._parse_BVertex(line))
-                #raise RuntimeError("BVertex is not supported.")
+                obj.add_vertices(self._parse_bvertex(line))
             elif line.find(b"face ") != -1:
                 obj.add_faces(self._parse_face(line))
             elif line.find(b"normal_weight ") != -1:
@@ -1739,7 +1740,6 @@ class MqoFile:
             elif line.find(b"vertexattr ") != -1:
                 print("vertexattr chunk is not supported.")
                 self._skip_chunk()
-                # raise RuntimeError("vertexattr is not supported.")
 
         raise RuntimeError("Format Error: Failed to parse 'Object' field.")
 
@@ -1782,15 +1782,15 @@ class MqoFile:
         return decode(m.group(1))
 
     def load(self, filepath):
-        import pathlib
         if pathlib.Path(filepath).suffix.lower() == ".mqo":
             with open(filepath, "rb") as f:
                 self._raw = RawData(f.read())
         else:
-            import zipfile
             with zipfile.ZipFile(filepath) as zfile:
-                for zinfo in zfile.infolist():
+                zinfo = None
+                for info in zfile.infolist():
                     if pathlib.Path(zinfo.filename).suffix.lower() == ".mqo":
+                        zinfo = info
                         break
                 else:
                     raise RuntimeError("No *.mqo found in {}".format(filepath))
@@ -1820,7 +1820,7 @@ class MqoFile:
                 self._parse_trial_noise(line)
                 raise RuntimeError("The file with TrialNoise chunk "
                                    "is not supported.")
-            elif line.find(b"IncludeXml") != -1:
+            if line.find(b"IncludeXml") != -1:
                 xml_name = self._parse_include_xml(line)
                 print(".xml data '{}' will not be loaded.".format(xml_name))
             elif line.find(b"Thumbnail") != -1:
