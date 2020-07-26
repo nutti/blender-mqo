@@ -1,0 +1,47 @@
+Metasequoia Document
+Format Text Ver 1.1
+
+Scene {
+	pos -0.255736113 8.37970543 2400
+	lookat 0 0 0
+	head 0.1200
+	pich 0.1008
+	bank 0.0000
+	ortho 0
+	zoom2 3.1250
+	amb 0.250 0.250 0.250
+	frontclip 360
+	backclip 72000
+	dirlights 1 {
+		light {
+			dir 0.408 0.408 0.816
+			color 1.000 1.000 1.000
+		}
+	}
+}
+Object "obj1" {
+	depth 0
+	folding 1
+	scale 1 1 1
+	rotation 0 0 0
+	translation 0 0 0
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	normal_weight 1
+	color 0.898 0.498 0.698
+	color_type 0
+	mirror 2
+	mirror_axis 3
+	vertex 4 {
+		100 -28.1565781 100
+		100 -228.156586 100
+		100 -28.1565781 -100
+		100 -228.156586 -100
+	}
+	face 1 {
+		4 V(0 2 3 1)
+	}
+}
+Eof

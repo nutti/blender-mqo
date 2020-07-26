@@ -107,6 +107,42 @@ class TestImportMqo(common.TestBase):
 
         self._valid_object(mqo_file, "obj1", 8, 6)
 
+    def test_import_mqo_single_object_with_bvertex(self):
+        filepath = "{}/{}/single_object_with_bvertex.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 0,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 6)
+
+    def test_import_mqo_single_object_with_edge(self):
+        filepath = "{}/{}/single_object_with_edge.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 0,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 11, 6)
+
     def test_import_mqo_multiple_objects(self):
         filepath = "{}/{}/multiple_objects.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
@@ -133,6 +169,30 @@ class TestImportMqo(common.TestBase):
             return
 
         filepath = "{}/{}/single_material.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 1,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 6)
+        self._valid_material(mqo_file, "obj1", "mat1")
+
+    def test_import_mqo_object_with_single_materialex2(self):
+        # TODO: because blender crash at bpy.ops.object.material_slot_assign(),
+        #       we can not test in Blender 2.8
+        if common.check_version(2, 80, 0) >= 0:
+            return
+
+        filepath = "{}/{}/single_material_with_materialex2.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
                                                  filepath=filepath,
@@ -218,3 +278,40 @@ class TestImportMqo(common.TestBase):
 
         self._valid_object(mqo_file, "obj1", 8, 5)
         self._valid_mirror(mqo_file, "obj1")
+
+    def test_import_mqo_object_with_mirrored_multiple_axes(self):
+        filepath = "{}/{}/mirrored_multiple_axes.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 0,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 5)
+        self._valid_mirror(mqo_file, "obj1")
+
+    def test_import_mqoz(self):
+        filepath = "{}/{}/single_object.mqoz".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 0,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 6)

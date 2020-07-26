@@ -1789,7 +1789,7 @@ class MqoFile:
             with zipfile.ZipFile(filepath) as zfile:
                 zinfo = None
                 for info in zfile.infolist():
-                    if pathlib.Path(zinfo.filename).suffix.lower() == ".mqo":
+                    if pathlib.Path(info.filename).suffix.lower() == ".mqo":
                         zinfo = info
                         break
                 else:

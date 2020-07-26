@@ -1,0 +1,59 @@
+Metasequoia Document
+Format Text Ver 1.1
+
+Scene {
+	pos -47.2091103 -26.6490555 1500
+	lookat 0 0 0
+	head -0.7800
+	pich 0.7600
+	bank 0.0000
+	ortho 0
+	zoom2 5.0000
+	amb 0.250 0.250 0.250
+	frontclip 225.000015
+	backclip 45000
+	dirlights 1 {
+		light {
+			dir 0.408 0.408 0.816
+			color 1.000 1.000 1.000
+		}
+	}
+}
+Object "obj1" {
+	depth 0
+	folding 0
+	scale 1 1 1
+	rotation 0 0 0
+	translation 0 0 0
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	normal_weight 1
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 11 {
+		-100 100 100
+		-100 -100 100
+		100 100 100
+		100 -100 100
+		100 100 -100
+		100 -100 -100
+		-100 100 -100
+		-100 -100 -100
+		-14.202527 133.472626 -164.396317
+		23.3450813 144.532791 -216.32756
+		24.2310677 163.493088 -242.552856
+	}
+	face 8 {
+		4 V(0 2 3 1)
+		4 V(2 4 5 3)
+		4 V(4 6 7 5)
+		4 V(6 0 1 7)
+		4 V(6 4 2 0)
+		4 V(1 3 5 7)
+		2 V(8 9)
+		2 V(9 10)
+	}
+}
+Eof

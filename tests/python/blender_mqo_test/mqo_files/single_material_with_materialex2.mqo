@@ -1,0 +1,75 @@
+Metasequoia Document
+Format Text Ver 1.1
+
+Scene {
+	pos 15.8250275 31.7411652 1500
+	lookat 0 0 0
+	head -0.6800
+	pich 0.8700
+	bank 0.0000
+	ortho 0
+	zoom2 5.0000
+	amb 0.250 0.250 0.250
+	frontclip 225.000015
+	backclip 45000
+	dirlights 1 {
+		light {
+			dir 0.408 0.408 0.816
+			color 1.000 1.000 1.000
+		}
+	}
+}
+Material 1 {
+	"mat1" vcol(1) col(1.000 0.282 0.298 0.762) dif(0.863) amb(0.625) emi(0.325) spc(0.325) power(3.75) reflect(0.188) refract(1.300)
+}
+MaterialEx2 1 {
+	material 0 {
+		shadertype "hlsl"
+		shadername "glTF"
+		shaderparam 4 {
+			Metallic float 0.25
+			Roughness float 0.25
+			AlphaMode int 0
+			AlphaCutOff float 0.5
+		}
+		shadermappingparam Bump 1 {
+			NormalScale float 1
+		}
+		shadermappingparam Occlusion 1 {
+			Strength float 1
+		}
+	}
+}
+Object "obj1" {
+	depth 0
+	folding 0
+	scale 1 1 1
+	rotation 0 0 0
+	translation 0 0 0
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	normal_weight 1
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 8 {
+		-100 100 100
+		-100 -100 100
+		100 100 100
+		100 -100 100
+		100 100 -100
+		100 -100 -100
+		-100 100 -100
+		-100 -100 -100
+	}
+	face 6 {
+		4 V(0 2 3 1) M(0)
+		4 V(2 4 5 3) M(0)
+		4 V(4 6 7 5) M(0)
+		4 V(6 0 1 7) M(0)
+		4 V(6 4 2 0) M(0)
+		4 V(1 3 5 7) M(0)
+	}
+}
+Eof

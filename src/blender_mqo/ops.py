@@ -20,7 +20,6 @@ from .utils import compatibility as compat
 MQO_TO_BLENDER_PROJECTION_TYPE = {0: 'BOX', 1: 'FLAT', 2: 'TUBE', 3: 'SPHERE'}
 BLENDER_TO_MQO_PROJECTION_TYPE = {'BOX': 0, 'FLAT': 1, 'TUBE': 2, 'SPHERE': 3}
 MQO_TO_BLENDER_MIRROR_TYPE = {0: 'NONE', 1: 'SEPARATE', 2: 'CONNECT'}
-MQO_TO_BLENDER_MIRROR_AXIS_INDEX = {1: 0, 2: 1, 4: 2}
 
 
 def get_outermost_verts(bm):
@@ -227,8 +226,16 @@ def import_object(mqo_obj, materials):
             axis_aligned_verts = {}
             for ov in outermost_verts:
                 new_vert = bm.verts.new(ov.co)
-                new_vert.co[MQO_TO_BLENDER_MIRROR_AXIS_INDEX[
-                    mqo_obj.mirror_axis]] = 0.0
+                # TODO: Need to clarify the specification when more than two
+                #       axes are specified. For now, we applied about highest
+                #       prioritized axis. (X > Y > Z)
+                axis_index = mqo_obj.mirror_axis
+                if axis_index & 0x1:
+                    new_vert.co[0] = 0.0
+                elif axis_index & 0x2:
+                    new_vert.co[1] = 0.0
+                elif axis_index & 0x4:
+                    new_vert.co[2] = 0.0
                 axis_aligned_verts[ov] = new_vert
 
             # make ordered outermost vertices

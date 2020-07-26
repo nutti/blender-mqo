@@ -183,23 +183,25 @@ def valid_uvs(bl_obj, mqo_obj):
 
 def valid_mirror_modifier(bl_mod, mqo_obj):
     if check_version(2, 80, 0) >= 0:
-        if mqo_obj.mirror_axis == 1:
+        axis_index = mqo_obj.mirror_axis
+        if axis_index & 0x1:
             if not bl_mod.use_axis[0]:
                 return False
-        if mqo_obj.mirror_axis == 2:
+        if axis_index & 0x2:
             if not bl_mod.use_axis[1]:
                 return False
-        if mqo_obj.mirror_axis == 4:
+        if axis_index & 0x4:
             if not bl_mod.use_axis[2]:
                 return False
     else:
-        if mqo_obj.mirror_axis == 1:
+        axis_index = mqo_obj.mirror_axis
+        if axis_index & 0x1:
             if not bl_mod.use_x:
                 return False
-        if mqo_obj.mirror_axis == 2:
+        if axis_index & 0x2:
             if not bl_mod.use_y:
                 return False
-        if mqo_obj.mirror_axis == 4:
+        if axis_index & 0x4:
             if not bl_mod.use_z:
                 return False
 
