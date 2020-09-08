@@ -65,6 +65,6 @@ Support via [GitHub Sponsors](https://github.com/sponsors/nutti)
 * WEBSITE: [Japanese Only](https://colorful-pico.net/)
 
 
-### Contributor
+### Contributors
 
 * [**@sapper-trle**](https://github.com/sapper-trle)
