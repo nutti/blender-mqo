@@ -164,9 +164,20 @@ def import_object(mqo_obj, materials):
     for face in mqo_faces:
         face_verts = []
 
-        # create face
+        # Create face.
+        used_indices = []
         for j in range(face.ngons):
-            face_verts.append(bm_verts[face.vertex_indices[j]])
+            # Workaround for the multiple usage of BMVert in a face.
+            # Ex: (11, 12, 12) -> (v[11], v[12], new v)
+            vidx = face.vertex_indices[j]
+            if vidx in used_indices:
+                new_v = bm.verts.new(bm_verts[vidx].co)
+                face_verts.append(new_v)
+                print("Vertex {} is already used. Try to create new BMVert"
+                      .format(vidx))
+            else:
+                face_verts.append(bm_verts[vidx])
+                used_indices.append(vidx)
         bm_face = bm.faces.new(face_verts)
 
         # set UV if exists
