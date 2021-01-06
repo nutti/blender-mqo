@@ -340,7 +340,7 @@ def import_mqo_file(filepath, exclude_objects, exclude_materials,
     mqo_file = mqo.MqoFile()
     mqo_file.load(filepath)
 
-    orig_mode = bpy.context.mode
+    orig_mode = compat.get_object_mode(bpy.context)
     if bpy.ops.object.mode_set.poll() and orig_mode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -498,7 +498,7 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
 
     export_objects = [obj for obj in bpy.data.objects if obj.type == 'MESH']
 
-    orig_mode = bpy.context.mode
+    orig_mode = compat.get_object_mode(bpy.context)
     if bpy.ops.object.mode_set.poll() and orig_mode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
 

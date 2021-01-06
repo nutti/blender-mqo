@@ -162,3 +162,10 @@ def get_all_space_types():
             'FILE_BROWSER': bpy.types.SpaceFileBrowser,
             'CONSOLE': bpy.types.SpaceConsole,
         }
+
+
+def get_object_mode(context):
+    try:
+        return context.object.mode
+    except:
+        return context.mode
