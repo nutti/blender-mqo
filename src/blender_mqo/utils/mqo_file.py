@@ -1518,7 +1518,7 @@ class MqoFile:
                                        .format(num_verts, len(verts)))
                 return verts
 
-            r = re.compile(rb"([-0-9\.]+) ([-0-9\.]+) ([-0-9\.]+)")
+            r = re.compile(rb"([-0-9\.e]+) ([-0-9\.e]+) ([-0-9\.e]+)")
             m = r.search(line)
             if not m or len(m.groups()) != 3:
                 raise RuntimeError("Invalid format. (line:{})".format(line))
