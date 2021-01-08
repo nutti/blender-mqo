@@ -7,7 +7,6 @@ import bpy
 from bpy.props import (
     StringProperty,
     BoolProperty,
-    CollectionProperty,
 )
 from mathutils import Vector
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -607,11 +606,6 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
         bpy.ops.object.mode_set(mode=orig_mode)
 
 
-@compat.make_annotations
-class BoolPropertyCollection(bpy.types.PropertyGroup):
-    checked = BoolProperty(name="", default=True)
-
-
 @BlClassRegistry()
 @compat.make_annotations
 class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
@@ -629,75 +623,22 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     add_import_prefix = BoolProperty(name="Add Import Prefix", default=True)
     import_prefix = StringProperty(name="Prefix", default="[Imported] ")
 
-    bool_prop_collection = CollectionProperty(type=BoolPropertyCollection)
-    objects_to_import = []
-    materials_to_import = []
-    loaded_file = ""
-
     def draw(self, _):
         layout = self.layout
 
-        if compat.check_version(2, 80, 0) < 0:
-            # TODO: dynamic loading is not supported in <2.79
-            return
-
-        if self.loaded_file != self.properties.filepath:
-            mqo_file = mqo.MqoFile()
-            try:
-                mqo_file.load(self.properties.filepath)
-                loaded = True
-            except:
-                loaded = False
-
-            self.objects_to_import = []
-            self.materials_to_import = []
-            self.bool_prop_collection.clear()
-            if loaded:
-                for obj in mqo_file.get_objects():
-                    item = self.bool_prop_collection.add()
-                    self.objects_to_import.append(
-                        {"name": obj.name, "item": item})
-                for mtrl in mqo_file.get_materials():
-                    item = self.bool_prop_collection.add()
-                    self.materials_to_import.append(
-                        {"name": mtrl.name, "item": item})
-            self.loaded_file = self.properties.filepath
-
-        layout.label(text="File: {}".format(self.loaded_file))
+        layout.label(text="File: {}".format(self.properties.filepath))
 
         layout.prop(self, "import_objects")
-        if self.import_objects and len(self.objects_to_import) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()     # spacer
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for d in self.objects_to_import:
-                box.prop(d["item"], "checked", text=d["name"])
-
         layout.prop(self, "import_materials")
-        if self.import_materials and len(self.materials_to_import) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()  # spacer
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for m in self.materials_to_import:
-                box.prop(m["item"], "checked", text=m["name"])
-
         layout.prop(self, "add_import_prefix")
         if self.add_import_prefix:
             layout.prop(self, "import_prefix")
 
     def execute(self, _):
-        exclude_objects = [o["name"]
-                           for o in self.objects_to_import
-                           if not o["item"].checked]
-        exclude_materials = [m["name"]
-                             for m in self.materials_to_import
-                             if not m["item"].checked]
-        import_mqo_file(self.properties.filepath, exclude_objects,
-                        exclude_materials,
+        exclude_objects = []
+        exclude_materials = []
+        import_mqo_file(self.properties.filepath,
+                        exclude_objects, exclude_materials,
                         self.import_prefix if self.add_import_prefix else "")
 
         self.report({'INFO'},
@@ -729,61 +670,18 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
     add_export_prefix = BoolProperty(name="Add Export Prefix", default=True)
     export_prefix = StringProperty(name="Prefix", default="[Exported] ")
 
-    bool_prop_collection = CollectionProperty(type=BoolPropertyCollection)
-    objects_to_export = []
-    materials_to_export = []
-    initialized = False
-
     def draw(self, _):
         layout = self.layout
 
-        if not self.initialized:
-            self.objects_to_export = []
-            self.materials_to_export = []
-            self.bool_prop_collection.clear()
-            for obj in bpy.data.objects:
-                if obj.type != 'MESH':
-                    continue
-                item = self.bool_prop_collection.add()
-                self.objects_to_export.append(
-                    {"name": obj.name, "item": item})
-            for mtrl in bpy.data.materials:
-                item = self.bool_prop_collection.add()
-                self.materials_to_export.append(
-                    {"name": mtrl.name, "item": item})
-            self.initialized = True
-
         layout.prop(self, "export_objects")
-        if self.export_objects and len(self.objects_to_export) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()     # spacer
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for d in self.objects_to_export:
-                box.prop(d["item"], "checked", text=d["name"])
-
         layout.prop(self, "export_materials")
-        if self.export_materials and len(self.materials_to_export) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()  # spacer
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for m in self.materials_to_export:
-                box.prop(m["item"], "checked", text=m["name"])
-
         layout.prop(self, "add_export_prefix")
         if self.add_export_prefix:
             layout.prop(self, "export_prefix")
 
     def execute(self, _):
-        exclude_objects = [o["name"]
-                           for o in self.objects_to_export
-                           if not o["item"].checked]
-        exclude_materials = [m["name"]
-                             for m in self.materials_to_export
-                             if not m["item"].checked]
+        exclude_objects = []
+        exclude_materials = []
         export_mqo_file(self.properties.filepath, exclude_objects,
                         exclude_materials,
                         self.export_prefix if self.add_export_prefix else "")
