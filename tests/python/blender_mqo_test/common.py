@@ -54,19 +54,23 @@ def get_num_faces(obj):
     return num_faces
 
 
+def is_float_same(f0, f1):
+    return math.fabs(f0 - f1) < ALLOWABLE_ERROR
+
+
 def is_v2_same(v0, v1):
-    if (math.fabs(v0[0] - v1[0]) > ALLOWABLE_ERROR) or \
-       (math.fabs(v0[1] - v1[1]) > ALLOWABLE_ERROR):
-        return False
-    return True
+    if is_float_same(v0[0], v1[0]) and \
+       is_float_same(v0[1], v1[1]):
+        return True
+    return False
 
 
 def is_v3_same(v0, v1):
-    if (math.fabs(v0[0] - v1[0]) > ALLOWABLE_ERROR) or \
-       (math.fabs(v0[1] - v1[1]) > ALLOWABLE_ERROR) or \
-       (math.fabs(v0[2] - v1[2]) > ALLOWABLE_ERROR):
-        return False
-    return True
+    if is_float_same(v0[0], v1[0]) and \
+       is_float_same(v0[1], v1[1]) and \
+       is_float_same(v0[2], v1[2]):
+        return True
+    return False
 
 
 def is_same(var1, var2, allowable_erorr=ALLOWABLE_ERROR):
@@ -175,7 +179,7 @@ def valid_uvs(bl_obj, mqo_obj):
             mqo_uv_corrected = mqo_uv.copy()
             mqo_uv_corrected[1] = 1 - mqo_uv_corrected[1]
             if not is_v2_same(bl_uv, mqo_uv_corrected):
-                print("UV coords do not match {} vs {}" .format(bl_uv, mqo_uv_corrected))
+                print("UV coords do not match {} vs {}".format(bl_uv, mqo_uv_corrected))
                 return False
 
     return True
@@ -204,6 +208,41 @@ def valid_mirror_modifier(bl_mod, mqo_obj):
         if axis_index & 0x4:
             if not bl_mod.use_z:
                 return False
+
+    return True
+
+
+@memorize_view_3d_mode
+def valid_vertexattr(bl_obj, mqo_obj):
+    if bpy.ops.object.mode_set.poll():
+        bpy.ops.object.mode_set(mode='EDIT')
+
+    bm = bmesh.from_edit_mesh(bl_obj.data)
+    bl_weights = {}
+    for vg in bl_obj.vertex_groups:
+        for v in bm.verts:
+            try:
+                w = vg.weight(v.index)
+                bl_weights[v.index] = w
+            except RuntimeError:
+                pass
+
+    mqo_weights = mqo_obj.get_vertexattr('WEIT')
+    if mqo_weights is None:
+        mqo_weights = {}
+
+    if len(bl_weights.keys()) != len(mqo_weights.keys()):
+        print("Number of vertexattr 'WEIT' does not match {} vs {}"
+              .format(len(bl_weights.keys()), len(mqo_weights.keys())))
+        return False
+
+    for vidx in bl_weights:
+        bl_w = bl_weights[vidx]
+        mqo_w = bl_weights[vidx]
+        if not is_float_same(bl_w, mqo_w):
+            print("Vertexattr 'WEIT' value does not match {} vs {}"
+                  .format(bl_w, mqo_w))
+            return False
 
     return True
 

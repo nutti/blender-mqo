@@ -737,6 +737,39 @@ class Face:
 
 
 class Object:
+    class VertexAttr:
+        def __init__(self):
+            self.uid = None    # Not supported.
+            self.weit = {}     # { vertex_index: weit }
+            self.color = None  # Not supported.
+
+        def merge(self, other):
+            for vidx, w in other.weit.items():
+                self.weit[vidx] = w
+
+        def to_str(self, fmt='STDOUT'):
+            s = ""
+            if fmt == 'MQO_FILE':
+                s += INDENT * 2 + "weit {"
+                s += "\n"
+                for vidx in sorted(self.weit.keys()):
+                    s += INDENT * 3 + "{} {:.3f}".format(vidx, self.weit[vidx])
+                    s += "\n"
+                s += INDENT * 2 + "}"
+                s += "\n"
+
+            return s
+
+        def is_same(self, other):
+            if len(self.weit.keys()) != len(other.weit.keys()):
+                return False
+
+            for k in self.weit:
+                if not is_same(self.weit[k], other.weit[k]):
+                    return False
+
+            return True
+
     def __init__(self):
         self._name = None
         self._uid = None
@@ -763,6 +796,7 @@ class Object:
         self._normal_weight = None
         self._vertices = []
         self._faces = []
+        self._vertex_attrs = None
 
     @property
     def name(self):
@@ -1004,6 +1038,21 @@ class Object:
     def get_vertices(self):
         return self._vertices
 
+    def merge_vertexattr(self, attrs):
+        if attrs is None:
+            return
+        if self._vertex_attrs is None:
+            self._vertex_attrs = Object.VertexAttr()
+        self._vertex_attrs.merge(attrs)
+
+    def get_vertexattr(self, key):
+        if key == 'WEIT':
+            if self._vertex_attrs is None:
+                return None
+            return self._vertex_attrs.weit
+
+        return None
+
     def add_face(self, face):
         self._faces.append(face)
 
@@ -1052,6 +1101,10 @@ class Object:
         for sf, of in zip(self._faces, other.faces):
             if not sf.is_same(of):
                 return False
+
+        # # pylint: disable=protected-access
+        if not self._vertex_attrs.is_same(other._vertex_attr):
+            return False
 
         return True
 
@@ -1119,6 +1172,10 @@ class Object:
                 for face in self._faces:
                     s += face.to_str(fmt)
                 s += INDENT + "}\n"
+            if self._vertex_attrs is not None:
+                s += INDENT + "vertexattr {\n"
+                s += self._vertex_attrs.to_str(fmt)
+                s += INDENT + "}\n"
             s += "}\n"
 
         return s
@@ -1149,6 +1206,7 @@ class Object:
         self._normal_weight = 1
         self._vertices = []
         self._faces = []
+        self._vertex_attrs = None
 
 
 class MqoFile:
@@ -1640,6 +1698,52 @@ class MqoFile:
 
         raise RuntimeError("Format Error: Failed to parse 'face' field.")
 
+    def _parse_vertexattr_weit(self, first_line):
+        if first_line.find(b"weit {") == -1:
+            raise RuntimeError("Invalid format. (line:{})".format(first_line))
+
+        weit_list = {}
+        while not self._raw.eof():
+            line = self._raw.get_line()
+            line = remove_return(line)
+            line = line.strip()
+
+            if line.find(b"}") != -1:
+                return weit_list
+
+            r = re.compile(rb"([0-9]+) ([0-9\.]+)")
+            m = r.search(line)
+            if not m or len(m.groups()) != 2:
+                raise RuntimeError("Invalid format. (line:{})".format(line))
+
+            weit_list[int(m.group(1))] = float(m.group(2))
+
+        raise RuntimeError("Format Error: Failed to parse 'weit' field.")
+
+    def _parse_vertexattr(self, first_line):
+        if first_line.find(b"vertexattr {") == -1:
+            raise RuntimeError("Invalid format. (line:{})".format(first_line))
+
+        vertexattr = Object.VertexAttr()
+        while not self._raw.eof():
+            line = self._raw.get_line()
+            line = remove_return(line)
+            line = line.strip()
+
+            if line.find(b"}") != -1:
+                return vertexattr
+
+            if line.find(b"weit ") != -1:
+                vertexattr.weit = self._parse_vertexattr_weit(line)
+            elif line.find(b"uid ") != -1:
+                print("vertexattr uid is not supported")
+                self._skip_chunk()
+            elif line.find(b"color") != -1:
+                print("vertexattr color is not supported")
+                self._skip_chunk()
+
+        raise RuntimeError("Format Error: Failed to parse 'vertexattr' field.")
+
     def _parse_object(self, first_line):
         r = re.compile(rb"Object \"([^\"]+)\" {")
         m = r.search(first_line)
@@ -1738,8 +1842,7 @@ class MqoFile:
                 rgx = rb"normal_weight ([0-9\.]+)"
                 obj.normal_weight = float(parse(line, rgx)[0])
             elif line.find(b"vertexattr ") != -1:
-                print("vertexattr chunk is not supported.")
-                self._skip_chunk()
+                obj.merge_vertexattr(self._parse_vertexattr(line))
 
         raise RuntimeError("Format Error: Failed to parse 'Object' field.")
 

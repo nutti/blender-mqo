@@ -68,6 +68,8 @@ class TestImportMqo(common.TestBase):
         self.assertTrue(common.valid_vertices(bl_obj, mqo_obj),
                         "Valid Vertices")
         self.assertTrue(common.valid_faces(bl_obj, mqo_obj), "Valid Faces")
+        self.assertTrue(common.valid_vertexattr(bl_obj, mqo_obj),
+                        "Valid Vertexattr")
 
     def _valid_material(self, mqo_file, obj_name, mtrl_name):
         bl_obj = bpy.data.objects[obj_name]
@@ -297,6 +299,24 @@ class TestImportMqo(common.TestBase):
 
         self._valid_object(mqo_file, "obj1", 8, 5)
         self._valid_mirror(mqo_file, "obj1")
+
+    def test_import_mqo_object_with_vertexattr(self):
+        filepath = "{}/{}/vertexattr.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 0,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 6)
 
     def test_import_mqoz(self):
         filepath = "{}/{}/single_object.mqoz".format(

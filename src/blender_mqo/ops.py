@@ -7,6 +7,7 @@ import bpy
 from bpy.props import (
     StringProperty,
     BoolProperty,
+    EnumProperty,
 )
 from mathutils import Vector
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -117,7 +118,7 @@ def import_materials(mqo_file, filepath, exclude_materials):
     return materials_imported
 
 
-def import_object(mqo_obj, materials):
+def import_object(mqo_obj, materials, vertex_weight_import_options):
     # construct object
     new_mesh = bpy.data.meshes.new(mqo_obj.name)
     new_obj = bpy.data.objects.new(mqo_obj.name, new_mesh)
@@ -148,6 +149,12 @@ def import_object(mqo_obj, materials):
     bm_faces = []
     mqo_faces = mqo_obj.get_faces(uniq=True)
 
+    vertex_weights = mqo_obj.get_vertexattr('WEIT')
+    vertex_weighted_vertices = {}
+    if vertex_weight_import_options.import_ and vertex_weights is not None:
+        for vidx, weight in vertex_weights.items():
+            vertex_weighted_vertices[bm_verts[vidx]] = weight
+
     # create UV map
     has_uvmap = False
     for face in mqo_faces:
@@ -172,6 +179,8 @@ def import_object(mqo_obj, materials):
             if vidx in used_indices:
                 new_v = bm.verts.new(bm_verts[vidx].co)
                 face_verts.append(new_v)
+                if vidx in vertex_weights.keys():
+                    vertex_weighted_vertices[new_v] = vertex_weights[vidx]
                 print("Vertex {} is already used. Try to create new BMVert"
                       .format(vidx))
             else:
@@ -187,7 +196,30 @@ def import_object(mqo_obj, materials):
                     1 - bm_face.loops[j][uv_layer].uv[1]
         bm_faces.append(bm_face)
 
+    # Before importing vertex weights, we need to fix the IDs of BMVert.
     bm.to_mesh(new_mesh)
+
+    # Construct vertex groups to store vertex weights.
+    if vertex_weighted_vertices:
+        if vertex_weight_import_options.grouped_by == 'ALL_IN_ONE':
+            vertex_weights_group = new_obj.vertex_groups.new(
+                name=vertex_weight_import_options.group_name)
+            for v, weight in vertex_weighted_vertices.items():
+                vertex_weights_group.add([v.index], weight, 'REPLACE')
+        elif vertex_weight_import_options.grouped_by == 'WEIGHT_VALUE':
+            weight_to_vertices = {}
+            for v, weight in vertex_weighted_vertices.items():
+                if weight not in weight_to_vertices:
+                    weight_to_vertices[weight] = []
+                weight_to_vertices[weight].append(v)
+            for i, (weight, vs) in enumerate(weight_to_vertices.items()):
+                group_name = "{} {}".format(
+                    vertex_weight_import_options.group_name, i)
+                vertex_weights_group = new_obj.vertex_groups.new(
+                    name=group_name)
+                for v in vs:
+                    vertex_weights_group.add([v.index], weight, 'REPLACE')
+
     bm.free()
 
     # object mode -> edit mode
@@ -324,18 +356,20 @@ def import_object(mqo_obj, materials):
     return new_obj
 
 
-def import_objects(mqo_file, exclude_objects, materials):
+def import_objects(mqo_file, exclude_objects, materials,
+                   vertex_weight_import_options):
     objects_imported = []
     for mqo_obj in mqo_file.get_objects():
         if mqo_obj.name in exclude_objects:
             continue
-        objects_imported.append(import_object(mqo_obj, materials))
+        objects_imported.append(
+            import_object(mqo_obj, materials, vertex_weight_import_options))
 
     return objects_imported
 
 
 def import_mqo_file(filepath, exclude_objects, exclude_materials,
-                    import_prefix):
+                    import_prefix, vertex_weight_import_options):
     mqo_file = mqo.MqoFile()
     mqo_file.load(filepath)
 
@@ -346,7 +380,8 @@ def import_mqo_file(filepath, exclude_objects, exclude_materials,
     materials_imported = import_materials(mqo_file, filepath,
                                           exclude_materials)
     objects_imported = import_objects(mqo_file, exclude_objects,
-                                      materials_imported)
+                                      materials_imported,
+                                      vertex_weight_import_options)
 
     # set import prefix
     for mtrl in materials_imported:
@@ -486,7 +521,7 @@ def attach_texture_to_material(mqo_file, exclude_objects, exclude_materials,
 
 
 def export_mqo_file(filepath, exclude_objects, exclude_materials,
-                    export_prefix):
+                    export_prefix, vertex_weight_export_options):
     mqo_file = mqo.MqoFile()
     mqo_file.version = "1.1"
     mqo_file.format = "Text"
@@ -583,6 +618,28 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
                 if bm_face.select:
                     mqo_face.material = mqo_mtrl_idx
 
+        # Vertex weights.
+        if vertex_weight_export_options.export:
+            vertex_groups = \
+                vertex_weight_export_options.target_groups[obj.name]
+
+            mqo_vertex_attr = mqo.Object.VertexAttr()
+            has_vertex_attr = False
+            for vg in obj.vertex_groups:
+                if vg.name not in vertex_groups:
+                    continue
+                for v in bm.verts:
+                    try:
+                        mqo_vertex_attr.weit[v.index] = vg.weight(v.index)
+                        has_vertex_attr = True
+                    except RuntimeError:
+                        # This error will be raised when the vertex is not in
+                        # the group.
+                        pass
+
+            if has_vertex_attr:
+                mqo_obj.merge_vertexattr(mqo_vertex_attr)
+
         # edit mode -> object mode
         if bpy.ops.object.mode_set.poll():
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -606,6 +663,14 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
         bpy.ops.object.mode_set(mode=orig_mode)
 
 
+class VertexWeightImportOptions():
+    def __init__(self, import_=True, grouped_by='ALL_IN_ONE',
+                 group_name="Vertex Weights Group"):
+        self.import_ = import_
+        self.grouped_by = grouped_by
+        self.group_name = group_name
+
+
 @BlClassRegistry()
 @compat.make_annotations
 class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
@@ -620,6 +685,26 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
 
     import_objects = BoolProperty(name="Import Objects", default=True)
     import_materials = BoolProperty(name="Import Materials", default=True)
+    import_vertex_weights = BoolProperty(
+        name="Import Vertex Weights",
+        default=True,
+    )
+    vertex_weights_grouped_by = EnumProperty(
+        name="Grouped by",
+        description="How to group vertex weights",
+        items=[
+            ('ALL_IN_ONE', "All In One",
+             "Vertex weights are grouped as a single vertex group"),
+            ('WEIGHT_VALUE', "Weight Value",
+             "Vertex weights are grouped as multiple vertex groups that has "
+             "a same weight value.")
+        ],
+        default='ALL_IN_ONE'
+    )
+    vertex_weights_group_name = StringProperty(
+        name="Group Name",
+        default="Vertex Weights Group"
+    )
     add_import_prefix = BoolProperty(name="Add Import Prefix", default=True)
     import_prefix = StringProperty(name="Prefix", default="[Imported] ")
 
@@ -630,6 +715,10 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
 
         layout.prop(self, "import_objects")
         layout.prop(self, "import_materials")
+        layout.prop(self, "import_vertex_weights")
+        if self.import_vertex_weights:
+            layout.prop(self, "vertex_weights_grouped_by")
+            layout.prop(self, "vertex_weights_group_name")
         layout.prop(self, "add_import_prefix")
         if self.add_import_prefix:
             layout.prop(self, "import_prefix")
@@ -637,9 +726,15 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     def execute(self, _):
         exclude_objects = []
         exclude_materials = []
+        vertex_weight_import_options = VertexWeightImportOptions(
+            self.import_vertex_weights,
+            self.vertex_weights_grouped_by,
+            self.vertex_weights_group_name
+        )
         import_mqo_file(self.properties.filepath,
                         exclude_objects, exclude_materials,
-                        self.import_prefix if self.add_import_prefix else "")
+                        self.import_prefix if self.add_import_prefix else "",
+                        vertex_weight_import_options)
 
         self.report({'INFO'},
                     "Imported from {}".format(self.properties.filepath))
@@ -651,6 +746,19 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         wm.fileselect_add(self)
 
         return {'RUNNING_MODAL'}
+
+
+class VertexWeightExportOptions():
+    def __init__(self, export, target_groups):
+        self.export = export
+        self.target_groups = target_groups      # { object: vertex_group }
+
+
+@compat.make_annotations
+class BLMQO_VertexWeightExportPropertyCollection(bpy.types.PropertyGroup):
+    object_name = StringProperty(name="Object Name", default="")
+    vertex_group_name = StringProperty(name="Vertex Group Name", default="")
+    checked = BoolProperty(name="", default=True)
 
 
 @BlClassRegistry()
@@ -665,26 +773,82 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
     filename_ext = ".mqo"
     filter_glob = StringProperty(default="*.mqo")
 
+    def get_objects_for_vertex_weights(self, context):
+        # TODO: select only objects to export.
+        items = []
+        for obj in bpy.data.objects:
+            if obj.type != 'MESH':
+                continue
+            items.append((obj.name, obj.name, obj.name))
+        return items
+
     export_objects = BoolProperty(name="Export Objects", default=True)
     export_materials = BoolProperty(name="Export Materials", default=True)
+    export_vertex_weights = BoolProperty(
+        name="Export Vertex Weights",
+        default=True,
+    )
+    vertex_groups_for_vertex_weights = bpy.props.CollectionProperty(
+        name="Vertex Groups for Vertex Weights",
+        type=BLMQO_VertexWeightExportPropertyCollection
+    )
+    objects_for_vertex_weights = EnumProperty(
+        name="Object",
+        items=get_objects_for_vertex_weights,
+    )
     add_export_prefix = BoolProperty(name="Add Export Prefix", default=True)
     export_prefix = StringProperty(name="Prefix", default="[Exported] ")
 
     def draw(self, _):
         layout = self.layout
 
+        object_to_vertex_groups = {}
+        for vg_idx in range(len(self.vertex_groups_for_vertex_weights)):
+            vg = self.vertex_groups_for_vertex_weights[vg_idx]
+            if vg.object_name not in object_to_vertex_groups:
+                object_to_vertex_groups[vg.object_name] = []
+            object_to_vertex_groups[vg.object_name].append(vg)
+
         layout.prop(self, "export_objects")
         layout.prop(self, "export_materials")
         layout.prop(self, "add_export_prefix")
+        layout.prop(self, "export_vertex_weights")
+        if self.export_vertex_weights:
+            layout.prop(self, "objects_for_vertex_weights")
+            sp = compat.layout_split(layout, factor=0.01)
+            sp.column()
+            sp = compat.layout_split(sp, factor=1.0)
+            col = sp.column()
+            for obj_name, vertex_groups in object_to_vertex_groups.items():
+                if obj_name != self.objects_for_vertex_weights:
+                    continue
+                box = col.box()
+                for group in vertex_groups:
+                    box.prop(group, "checked", text=group.vertex_group_name)
         if self.add_export_prefix:
             layout.prop(self, "export_prefix")
 
     def execute(self, _):
         exclude_objects = []
         exclude_materials = []
+        vertex_groups = {}
+
+        for obj in bpy.data.objects:
+            if obj.type != 'MESH':
+                continue
+            vertex_groups[obj.name] = []    # TODO: Use export object property.
+        for vg_idx in range(len(self.vertex_groups_for_vertex_weights)):
+            vg = self.vertex_groups_for_vertex_weights[vg_idx]
+            if vg.checked:
+                vertex_groups[vg.object_name].append(vg.vertex_group_name)
+
+        vertex_weight_export_options = VertexWeightExportOptions(
+            self.export_vertex_weights, vertex_groups
+        )
         export_mqo_file(self.properties.filepath, exclude_objects,
                         exclude_materials,
-                        self.export_prefix if self.add_export_prefix else "")
+                        self.export_prefix if self.add_export_prefix else "",
+                        vertex_weight_export_options)
 
         self.report({'INFO'},
                     "Exported to {}".format(self.properties.filepath))
@@ -693,6 +857,17 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
 
     def invoke(self, context, _):
         wm = context.window_manager
+
+        self.vertex_groups_for_vertex_weights.clear()
+        for obj in bpy.data.objects:
+            if obj.type != 'MESH':
+                continue
+            for vg in obj.vertex_groups:
+                item = self.vertex_groups_for_vertex_weights.add()
+                item.object_name = obj.name
+                item.vertex_group_name = vg.name
+                item.checked = True
+
         wm.fileselect_add(self)
 
         return {'RUNNING_MODAL'}
