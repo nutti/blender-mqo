@@ -671,6 +671,20 @@ class VertexWeightImportOptions():
         self.group_name = group_name
 
 
+@compat.make_annotations
+class BLMQO_ObjectImportPropertyCollection(bpy.types.PropertyGroup):
+    object_name = StringProperty(name="Object Name", default="")
+    valid = BoolProperty(name="Valid", default=False)
+    import_ = BoolProperty(name="", default=True)
+
+
+@compat.make_annotations
+class BLMQO_MaterialImportPropertyCollection(bpy.types.PropertyGroup):
+    material_name = StringProperty(name="Material Name", default="")
+    valid = BoolProperty(name="Valid", default=False)
+    import_ = BoolProperty(name="", default=True)
+
+
 @BlClassRegistry()
 @compat.make_annotations
 class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
@@ -684,7 +698,15 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     filter_glob = StringProperty(default="*.mqo;*.mqoz")
 
     import_objects = BoolProperty(name="Import Objects", default=True)
+    objects_to_import = bpy.props.CollectionProperty(
+        name="Objects to Import",
+        type=BLMQO_ObjectImportPropertyCollection
+    )
     import_materials = BoolProperty(name="Import Materials", default=True)
+    materials_to_import = bpy.props.CollectionProperty(
+        name="Materials to Import",
+        type=BLMQO_MaterialImportPropertyCollection
+    )
     import_vertex_weights = BoolProperty(
         name="Import Vertex Weights",
         default=True,
@@ -708,13 +730,97 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     add_import_prefix = BoolProperty(name="Add Import Prefix", default=True)
     import_prefix = StringProperty(name="Prefix", default="[Imported] ")
 
-    def draw(self, _):
+    prev_selected_file = ""
+    is_valid_mqo_file = False
+    invalid_mqo_file_reason = ""
+    num_valid_objects = 0
+    num_valid_materials = 0
+
+    def draw(self, context):
         layout = self.layout
+        user_prefs = compat.get_user_preferences(context)
+        prefs = user_prefs.addons["blender_mqo"].preferences
+
+        if (prefs.selective_import and
+                self.prev_selected_file != self.properties.filepath):
+            self.num_valid_objects = 0
+            self.num_valid_materials = 0
+            mqo_file = mqo.MqoFile()
+            try:
+                mqo_file.load(self.properties.filepath)
+                self.is_valid_mqo_file = True
+            except:
+                self.is_valid_mqo_file = False
+                self.invalid_mqo_file_reason = "Not MQO file."
+
+            if self.is_valid_mqo_file:
+                if len(mqo_file.get_objects()) > \
+                        prefs.importable_objects_limit:
+                    self.is_valid_mqo_file = False
+                    self.invalid_mqo_file_reason = \
+                        "Importable objects limit exceeded."
+                if len(mqo_file.get_materials()) > \
+                        prefs.importable_materials_limit:
+                    self.is_valid_mqo_file = False
+                    self.invalid_mqo_file_reason = \
+                        "Importable materials limit exceeded."
+
+            if self.is_valid_mqo_file:
+                for oi in self.objects_to_import:
+                    oi.valid = False
+                    oi.object_name = ""
+                    oi.import_ = True
+                for i, obj in enumerate(mqo_file.get_objects()):
+                    self.objects_to_import[i].valid = True
+                    self.objects_to_import[i].object_name = obj.name
+                    self.objects_to_import[i].import_ = True
+                    self.num_valid_objects += 1
+
+                for mi in self.materials_to_import:
+                    mi.valid = False
+                    mi.object_name = ""
+                    mi.import_ = True
+                for i, mtrl in enumerate(mqo_file.get_materials()):
+                    self.materials_to_import[i].valid = True
+                    self.materials_to_import[i].material_name = mtrl.name
+                    self.materials_to_import[i].import_ = True
+                    self.num_valid_materials += 1
+
+                self.is_valid_mqo_file = True
+                self.invalid_mqo_file_reason = ""
+
+            self.prev_selected_file = self.properties.filepath
+
+        if prefs.selective_import and not self.is_valid_mqo_file:
+            layout.label(text=self.invalid_mqo_file_reason)
+            return
 
         layout.label(text="File: {}".format(self.properties.filepath))
 
         layout.prop(self, "import_objects")
+        if (prefs.selective_import and self.import_objects and
+                self.num_valid_objects > 0):
+            sp = compat.layout_split(layout, factor=0.01)
+            sp.column()     # Spacer.
+            sp = compat.layout_split(sp, factor=1.0)
+            col = sp.column()
+            box = col.box()
+            for oi in self.objects_to_import:
+                if oi.valid:
+                    box.prop(oi, "import_", text=oi.object_name)
+
         layout.prop(self, "import_materials")
+        if (prefs.selective_import and self.import_materials and
+                self.num_valid_materials > 0):
+            sp = compat.layout_split(layout, factor=0.01)
+            sp.column()     # Spacer.
+            sp = compat.layout_split(sp, factor=1.0)
+            col = sp.column()
+            box = col.box()
+            for mi in self.materials_to_import:
+                if mi.valid:
+                    box.prop(mi, "import_", text=mi.material_name)
+
         layout.prop(self, "import_vertex_weights")
         if self.import_vertex_weights:
             layout.prop(self, "vertex_weights_grouped_by")
@@ -723,9 +829,28 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         if self.add_import_prefix:
             layout.prop(self, "import_prefix")
 
-    def execute(self, _):
-        exclude_objects = []
-        exclude_materials = []
+    def execute(self, context):
+        user_prefs = compat.get_user_preferences(context)
+        prefs = user_prefs.addons["blender_mqo"].preferences
+
+        if prefs.selective_import and not self.is_valid_mqo_file:
+            self.report(
+                {'WARNING'},
+                "{} (file: {})"
+                .format(self.invalid_mqo_file_reason,
+                        self.properties.filepath))
+            return {'CANCELLED'}
+
+        exclude_objects = [
+            oi.object_name
+            for oi in self.objects_to_import
+            if oi.valid and not oi.import_
+        ]
+        exclude_materials = [
+            mi.material_name
+            for mi in self.materials_to_import
+            if mi.valid and not mi.import_
+        ]
         vertex_weight_import_options = VertexWeightImportOptions(
             self.import_vertex_weights,
             self.vertex_weights_grouped_by,
@@ -743,6 +868,27 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
 
     def invoke(self, context, _):
         wm = context.window_manager
+        user_prefs = compat.get_user_preferences(context)
+        prefs = user_prefs.addons["blender_mqo"].preferences
+
+        self.objects_to_import.clear()
+        self.materials_to_import.clear()
+        if prefs.selective_import:
+            for _ in range(prefs.importable_objects_limit):
+
+                # Add properties for object.
+                item = self.objects_to_import.add()
+                item.object_name = ""
+                item.valid = False
+                item.import_ = True
+
+            for _ in range(prefs.importable_materials_limit):
+                # Add properties for materials.
+                item = self.materials_to_import.add()
+                item.material_name = ""
+                item.valid = False
+                item.import_ = True
+
         wm.fileselect_add(self)
 
         return {'RUNNING_MODAL'}
@@ -755,10 +901,22 @@ class VertexWeightExportOptions():
 
 
 @compat.make_annotations
+class BLMQO_ObjectExportPropertyCollection(bpy.types.PropertyGroup):
+    object_name = StringProperty(name="Object Name", default="")
+    export_ = BoolProperty(name="", default=True)
+
+
+@compat.make_annotations
+class BLMQO_MaterialExportPropertyCollection(bpy.types.PropertyGroup):
+    material_name = StringProperty(name="Material Name", default="")
+    export_ = BoolProperty(name="", default=True)
+
+
+@compat.make_annotations
 class BLMQO_VertexWeightExportPropertyCollection(bpy.types.PropertyGroup):
     object_name = StringProperty(name="Object Name", default="")
     vertex_group_name = StringProperty(name="Vertex Group Name", default="")
-    checked = BoolProperty(name="", default=True)
+    export_ = BoolProperty(name="", default=True)
 
 
 @BlClassRegistry()
@@ -783,13 +941,21 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         return items
 
     export_objects = BoolProperty(name="Export Objects", default=True)
+    objects_to_export = bpy.props.CollectionProperty(
+        name="Objects to Export",
+        type=BLMQO_ObjectExportPropertyCollection
+    )
     export_materials = BoolProperty(name="Export Materials", default=True)
+    materials_to_export = bpy.props.CollectionProperty(
+        name="Materials to Export",
+        type=BLMQO_MaterialExportPropertyCollection
+    )
     export_vertex_weights = BoolProperty(
         name="Export Vertex Weights",
         default=True,
     )
-    vertex_groups_for_vertex_weights = bpy.props.CollectionProperty(
-        name="Vertex Groups for Vertex Weights",
+    vertex_weights_to_export = bpy.props.CollectionProperty(
+        name="Vertex Weights to Export",
         type=BLMQO_VertexWeightExportPropertyCollection
     )
     objects_for_vertex_weights = EnumProperty(
@@ -803,43 +969,70 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         layout = self.layout
 
         object_to_vertex_groups = {}
-        for vg_idx in range(len(self.vertex_groups_for_vertex_weights)):
-            vg = self.vertex_groups_for_vertex_weights[vg_idx]
+        for vg_idx in range(len(self.vertex_weights_to_export)):
+            vg = self.vertex_weights_to_export[vg_idx]
             if vg.object_name not in object_to_vertex_groups:
                 object_to_vertex_groups[vg.object_name] = []
             object_to_vertex_groups[vg.object_name].append(vg)
 
         layout.prop(self, "export_objects")
+        if self.export_objects and len(self.objects_to_export) > 0:
+            sp = compat.layout_split(layout, factor=0.01)
+            sp.column()     # Spacer.
+            sp = compat.layout_split(sp, factor=1.0)
+            col = sp.column()
+            box = col.box()
+            for oe in self.objects_to_export:
+                box.prop(oe, "export_", text=oe["object_name"])
+
         layout.prop(self, "export_materials")
-        layout.prop(self, "add_export_prefix")
+        if self.export_materials and len(self.materials_to_export) > 0:
+            sp = compat.layout_split(layout, factor=0.01)
+            sp.column()     # Spacer.
+            sp = compat.layout_split(sp, factor=1.0)
+            col = sp.column()
+            box = col.box()
+            for me in self.materials_to_export:
+                box.prop(me, "export_", text=me["material_name"])
+
         layout.prop(self, "export_vertex_weights")
         if self.export_vertex_weights:
             layout.prop(self, "objects_for_vertex_weights")
             sp = compat.layout_split(layout, factor=0.01)
             sp.column()
             sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
+            col = sp.column()   # Spacer.
             for obj_name, vertex_groups in object_to_vertex_groups.items():
                 if obj_name != self.objects_for_vertex_weights:
                     continue
                 box = col.box()
                 for group in vertex_groups:
-                    box.prop(group, "checked", text=group.vertex_group_name)
+                    box.prop(group, "export_", text=group.vertex_group_name)
+
+        layout.prop(self, "add_export_prefix")
         if self.add_export_prefix:
             layout.prop(self, "export_prefix")
 
     def execute(self, _):
-        exclude_objects = []
-        exclude_materials = []
+        exclude_objects = [
+            oe.object_name
+            for oe in self.objects_to_export
+            if not oe.export_
+        ]
+        exclude_materials = [
+            me.material_name
+            for me in self.materials_to_export
+            if not me.export_
+        ]
         vertex_groups = {}
 
         for obj in bpy.data.objects:
             if obj.type != 'MESH':
                 continue
             vertex_groups[obj.name] = []    # TODO: Use export object property.
-        for vg_idx in range(len(self.vertex_groups_for_vertex_weights)):
-            vg = self.vertex_groups_for_vertex_weights[vg_idx]
-            if vg.checked:
+        for vg_idx in range(len(self.vertex_weights_to_export)):
+            vg = self.vertex_weights_to_export[vg_idx]
+            if vg.export_:
                 vertex_groups[vg.object_name].append(vg.vertex_group_name)
 
         vertex_weight_export_options = VertexWeightExportOptions(
@@ -858,15 +1051,29 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
     def invoke(self, context, _):
         wm = context.window_manager
 
-        self.vertex_groups_for_vertex_weights.clear()
+        self.objects_to_export.clear()
+        self.vertex_weights_to_export.clear()
         for obj in bpy.data.objects:
             if obj.type != 'MESH':
                 continue
+
+            # Add properties for object.
+            item = self.objects_to_export.add()
+            item.object_name = obj.name
+            item.export_ = True
+
+            # Add proeprties for vertex weight.
             for vg in obj.vertex_groups:
-                item = self.vertex_groups_for_vertex_weights.add()
+                item = self.vertex_weights_to_export.add()
                 item.object_name = obj.name
                 item.vertex_group_name = vg.name
-                item.checked = True
+                item.export_ = True
+
+        self.materials_to_export.clear()
+        for mtrl in bpy.data.materials:
+            item = self.materials_to_export.add()
+            item.material_name = mtrl.name
+            item.export_ = True
 
         wm.fileselect_add(self)
 

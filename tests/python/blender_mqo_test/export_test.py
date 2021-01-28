@@ -271,13 +271,13 @@ class TestExportMqo(common.TestBase):
                 "name": "",
                 "object_name": "obj1",
                 "vertex_group_name": "Vertex Weights Group",
-                "checked": True
+                "export_": True
             }
         ]
         bpy.ops.export_scene.blmqo_ot_export_mqo(
             'EXEC_DEFAULT', filepath=export_filepath, add_export_prefix=False,
             export_prefix="", export_vertex_weights=True,
-            vertex_groups_for_vertex_weights=vertex_groups)
+            vertex_weights_to_export=vertex_groups)
 
         export_mqo_file = MqoFile()
         export_mqo_file.load(export_filepath)

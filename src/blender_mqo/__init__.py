@@ -43,6 +43,10 @@ def register_updater(bl_info):
 
 def register():
     register_updater(bl_info)
+    bpy.utils.register_class(ops.BLMQO_ObjectImportPropertyCollection)
+    bpy.utils.register_class(ops.BLMQO_MaterialImportPropertyCollection)
+    bpy.utils.register_class(ops.BLMQO_ObjectExportPropertyCollection)
+    bpy.utils.register_class(ops.BLMQO_MaterialExportPropertyCollection)
     bpy.utils.register_class(ops.BLMQO_VertexWeightExportPropertyCollection)
     utils.bl_class_registry.BlClassRegistry.register()
 
@@ -69,6 +73,10 @@ def unregister():
     file_import_menu_type.remove(ops.topbar_mt_file_import_fn)
 
     bpy.utils.unregister_class(ops.BLMQO_VertexWeightExportPropertyCollection)
+    bpy.utils.unregister_class(ops.BLMQO_MaterialExportPropertyCollection)
+    bpy.utils.unregister_class(ops.BLMQO_ObjectExportPropertyCollection)
+    bpy.utils.unregister_class(ops.BLMQO_MaterialImportPropertyCollection)
+    bpy.utils.unregister_class(ops.BLMQO_ObjectImportPropertyCollection)
     utils.bl_class_registry.BlClassRegistry.unregister()
 
 
