@@ -5,6 +5,7 @@
 |Version|Download URL|
 |---|---|
 |*unstable*|[Download](https://github.com/nutti/blender-mqo/archive/master.zip)|
+|1.1|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.1)|
 |1.0|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.0)|
 
 
@@ -18,6 +19,7 @@ Add-on sources are located on the different places depending on the add-on versi
 |Version|Sources|
 |---|---|
 |unstable|src/blender_mqo|
+|1.1|blender_mqo|
 |1.0|blender_mqo|
 
 

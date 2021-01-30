@@ -22,11 +22,24 @@ The features of this add-on are as follows.
   * UV map
   * Materials
   * Mirror modifier
+  * Vertex weights
 * Export .mqo File
   * Object (includes Mesh)
   * UV map
   * Materials
   * Modifiers (All modifiers are applied before exporting)
+  * Vertex weights
+
+
+## Supported Version
+
+This add-on is supported on the below Blender.
+
+|Series|Supported Version|
+|---|---|
+|2.7x|2.79|
+|2.8x|2.80 - 2.83|
+|2.9x|2.90 -|
 
 
 ## Tutorials
