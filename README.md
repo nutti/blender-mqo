@@ -52,7 +52,7 @@ See [Document](docs/tutorial.md) to know details of this add-on.
 All changes about this add-on can be seen in [CHANGELOG.md](CHANGELOG.md).
 
 
-## Bug report / Feature request / Disscussions
+## Bug report / Feature request / Discussions
 
 If you want to report bug, request features or discuss about this add-on, see [ISSUES.md](ISSUES.md).
 
