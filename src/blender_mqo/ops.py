@@ -739,6 +739,8 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
         user_prefs = compat.get_user_preferences(context)
+        if user_prefs is None:
+            return
         prefs = user_prefs.addons["blender_mqo"].preferences
 
         if (prefs.selective_import and
