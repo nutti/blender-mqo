@@ -4,7 +4,7 @@
 ## [Unreleased](https://github.com/nutti/blender-mqo/compare/v1.2...master)
 
 
-## [Version 1.2](https://github.com/nutti/blender-mqo/compare/v1.1...v1.2) - 2022.X.XX
+## [Version 1.2](https://github.com/nutti/blender-mqo/compare/v1.1...v1.2) - 2022.2.7
 
 ### Other Updates
 
