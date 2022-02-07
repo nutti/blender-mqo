@@ -1,7 +1,19 @@
 # Change Log
 
 
-## [Unreleased](https://github.com/nutti/blender-mqo/compare/v1.1...master)
+## [Unreleased](https://github.com/nutti/blender-mqo/compare/v1.2...master)
+
+
+## [Version 1.2](https://github.com/nutti/blender-mqo/compare/v1.1...v1.2) - 2022.X.XX
+
+### Other Updates
+
+* Fix bugs
+
+
+### Contributors
+
+* [**@kant**](https://github.com/kant)
 
 
 ## [Version 1.1](https://github.com/nutti/blender-mqo/compare/v1.0...v1.1) - 2021.1.30

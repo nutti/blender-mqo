@@ -39,7 +39,8 @@ This add-on is supported on the below Blender.
 |---|---|
 |2.7x|2.79|
 |2.8x|2.80 - 2.83|
-|2.9x|2.90 -|
+|2.9x|2.90 - 2.93|
+|3.x|3.0 - |
 
 
 ## Tutorials
