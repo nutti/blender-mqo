@@ -1711,7 +1711,7 @@ class MqoFile:
             if line.find(b"}") != -1:
                 return weit_list
 
-            r = re.compile(rb"([0-9]+) ([0-9\.]+)")
+            r = re.compile(rb"([0-9]+) (-*[0-9\.]+)")
             m = r.search(line)
             if not m or len(m.groups()) != 2:
                 raise RuntimeError("Invalid format. (line:{})".format(line))
