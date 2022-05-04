@@ -34,7 +34,7 @@ def register_updater(bl_info):
     config.repository = "blender-mqo"
     config.current_addon_path = os.path.dirname(os.path.realpath(__file__))
     config.branches = ["master", "develop"]
-    config.addon_directory = config.current_addon_path[:config.current_addon_path.rfind("/")]
+    config.addon_directory = config.current_addon_path[:config.current_addon_path.rfind(utils.addon_updater.get_separator())]
     config.min_release_version = bl_info["version"]
     config.target_addon_path = "src/blender_mqo"
     updater = utils.addon_updater.AddonUpdatorManager.get_instance()
