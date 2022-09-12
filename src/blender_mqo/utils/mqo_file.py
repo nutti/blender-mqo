@@ -16,6 +16,8 @@ class RawData:
 
     def get_line(self):
         idx = self.data[self.seek:].find(b'\n')
+        if idx == -1:
+            idx = len(self.data[self.seek:]) - 1
         start = self.seek
         end = self.seek + idx + 1
         self.seek = end
@@ -1618,7 +1620,7 @@ class MqoFile:
         raise RuntimeError("Format Error: Failed to parse 'BVertex' field.")
 
     def _parse_face(self, first_line):
-        r = re.compile(rb"face ([0-9]+) {")
+        r = re.compile(rb"face ([0-9]+)\s*{")
         m = r.search(first_line)
         if not m or len(m.groups()) != 1:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
@@ -1919,6 +1921,8 @@ class MqoFile:
             # TODO: parse 'BlackImage' chunk
             # TODO: parse 'Blob' chunk
 
+            if line.upper() == b"Eof":
+                break
             if line.find(b"TrialNoise") != -1:
                 self._parse_trial_noise(line)
                 raise RuntimeError("The file with TrialNoise chunk "
