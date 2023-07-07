@@ -50,7 +50,8 @@ def import_material_v280(mqo_mtrl, filepath):
     # construct material
     new_mtrl = bpy.data.materials.new(mqo_mtrl.name)
     new_mtrl.use_nodes = True
-    output_node = new_mtrl.node_tree.nodes["Material Output"]
+    output_node = next(n for n in new_mtrl.node_tree.nodes
+                       if n.type == "OUTPUT_MATERIAL")
 
     # remove unused nodes
     nodes_to_remove = [n for n in new_mtrl.node_tree.nodes if n != output_node]
@@ -413,7 +414,8 @@ def export_material_v280(mqo_file, material):
 
     mqo_mtrl = mqo.Material()
     mqo_mtrl.name = material.name
-    output_node = material.node_tree.nodes["Material Output"]
+    output_node = next(n for n in material.node_tree.nodes
+                       if n.type == "OUTPUT_MATERIAL")
 
     links = output_node.inputs['Surface'].links
     if len(links) != 1:
