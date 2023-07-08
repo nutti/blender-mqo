@@ -33,14 +33,7 @@ The features of this add-on are as follows.
 
 ## Supported Version
 
-This add-on is supported on the below Blender.
-
-|Series|Supported Version|
-|---|---|
-|2.7x|2.79|
-|2.8x|2.80 - 2.83|
-|2.9x|2.90 - 2.93|
-|3.x|3.0 - |
+This add-on is supported on Blender 2.79 or later.
 
 
 ## Tutorials
