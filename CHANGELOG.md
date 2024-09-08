@@ -1,7 +1,17 @@
 # Change Log
 
 
-## [Unreleased](https://github.com/nutti/blender-mqo/compare/v1.3...master)
+## [Unreleased](https://github.com/nutti/blender-mqo/compare/v1.4.0...master)
+
+<!-- markdownlint-disable-next-line MD013 -->
+## [Version 1.4.0](https://github.com/nutti/blender-mqo/compare/v1.3...v1.4.0) - 2024.X.XX
+
+### Notice
+
+Since this version, the add-on introduces a
+[Semantic Versioning](https://semver.org/).  
+Semantic versioning can realize a short-term release after bug fixes and a
+long-term support for the specific Blender version.
 
 
 ## [Version 1.3](https://github.com/nutti/blender-mqo/compare/v1.2...v1.3) - 2023.7.16
