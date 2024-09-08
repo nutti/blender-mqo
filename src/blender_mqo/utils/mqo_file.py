@@ -50,7 +50,7 @@ def decode(str_):
         try:
             decoded_str = str_.decode(enc)
             break
-        except:
+        except:     # noqa
             pass
     else:
         raise RuntimeError("Failed to encoding.")
@@ -286,8 +286,8 @@ class Scene:
             if self._pos is not None:
                 s += INDENT + "pos {:.4f} {:.4f} {:.4f}\n".format(*self._pos)
             if self._lookat is not None:
-                s += INDENT + "lookat {:.4f} {:.4f} {:.4f}\n"\
-                     .format(*self._lookat)
+                s += INDENT
+                s += "lookat {:.4f} {:.4f} {:.4f}\n".format(*self._lookat)
             if self._head is not None:
                 s += INDENT + "head {:.4f}\n".format(self._head)
             if self._pich is not None:
@@ -305,8 +305,9 @@ class Scene:
             if self._backclip is not None:
                 s += INDENT + "backclip {}\n".format(self._backclip)
             if len(self._dirlights) > 0:
-                s += INDENT + "dirlight {}".format(len(self._dirlights)) + \
-                     " {\n"
+                s += INDENT
+                s += "dirlight {}".format(len(self._dirlights))
+                s += " {\n"
                 for light in self._dirlights:
                     s += light.to_str(fmt)
                 s += INDENT + "}\n"
@@ -1122,14 +1123,15 @@ class Object:
             if self._folding is not None:
                 s += INDENT + "folding {}\n".format(self._folding)
             if self._scale is not None:
-                s += INDENT + "scale {:.6f} {:.6f} {:.6f}\n"\
-                     .format(*self._scale)
+                s += INDENT
+                s += "scale {:.6f} {:.6f} {:.6f}\n".format(*self._scale)
             if self._rotation is not None:
-                s += INDENT + "rotation {:.6f} {:.6f} {:.6f}\n"\
-                     .format(*self._rotation)
+                s += INDENT
+                s += "rotation {:.6f} {:.6f} {:.6f}\n".format(*self._rotation)
             if self._translation is not None:
-                s += INDENT + "translation {:.6f} {:.6f} {:.6f}\n"\
-                     .format(*self._translation)
+                s += INDENT
+                s += "translation {:.6f} {:.6f} {:.6f}\n".format(
+                    *self._translation)
             if self._patch is not None:
                 s += INDENT + "patch {}\n".format(self._patch)
             if self._patch_triangle is not None:
@@ -1145,8 +1147,8 @@ class Object:
             if self._facet is not None:
                 s += INDENT + "facet {:.1f}\n".format(self._facet)
             if self._color is not None:
-                s += INDENT + "color {:.3f} {:.3f} {:.3f}\n"\
-                     .format(*self._color)
+                s += INDENT
+                s += "color {:.3f} {:.3f} {:.3f}\n".format(*self._color)
             if self._color_type is not None:
                 s += INDENT + "color_type {}\n".format(self._color_type)
             if self._mirror is not None:
@@ -1154,8 +1156,8 @@ class Object:
             if self._mirror_axis is not None:
                 s += INDENT + "mirror_axis {}\n".format(self._mirror_axis)
             if self._mirror_distance is not None:
-                s += INDENT + "mirror_dis {:.3f}\n"\
-                     .format(self._mirror_distance)
+                s += INDENT
+                s += "mirror_dis {:.3f}\n".format(self._mirror_distance)
             if self._lathe is not None:
                 s += INDENT + "lathe {}\n".format(self._lathe)
             if self._lathe_axis is not None:
@@ -1350,11 +1352,11 @@ class MqoFile:
         if first_line.find(b"light {") == -1:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
 
-        def parse(l, rgx):
+        def parse(line, rgx):
             r = re.compile(rgx)
-            m = r.search(l)
+            m = r.search(line)
             if not m:
-                raise RuntimeError("Failed to parse. (line:{})".format(l))
+                raise RuntimeError("Failed to parse. (line:{})".format(line))
             return m.groups()
 
         light = DirLight()
@@ -1404,11 +1406,11 @@ class MqoFile:
         if first_line.find(b"Scene {") == -1:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
 
-        def parse(l, rgx):
+        def parse(line, rgx):
             r = re.compile(rgx)
-            m = r.search(l)
+            m = r.search(line)
             if not m:
-                raise RuntimeError("Failed to parse. (line:{})".format(l))
+                raise RuntimeError("Failed to parse. (line:{})".format(line))
             return m.groups()
 
         scene = Scene()
@@ -1462,9 +1464,9 @@ class MqoFile:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
         num_mtrl = int(m.group(1))
 
-        def parse(l, rgx):
+        def parse(line, rgx):
             r = re.compile(rgx)
-            m = r.search(l)
+            m = r.search(line)
             if not m:
                 return None
             return m.groups()
@@ -1614,7 +1616,7 @@ class MqoFile:
                     return verts
             if not verts:
                 for _ in range(num_verts):
-                    x, y, z = struct.unpack("<fff", self._raw.read(3*4))
+                    x, y, z = struct.unpack("<fff", self._raw.read(3 * 4))
                     verts.append([x, y, z])
 
         raise RuntimeError("Format Error: Failed to parse 'BVertex' field.")
@@ -1625,9 +1627,9 @@ class MqoFile:
         if not m or len(m.groups()) != 1:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
 
-        def parse(l, rgx):
+        def parse(line, rgx):
             r = re.compile(rgx)
-            m = r.search(l)
+            m = r.search(line)
             if not m:
                 return None
             return m.groups()
@@ -1752,11 +1754,11 @@ class MqoFile:
         if not m or len(m.groups()) != 1:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))
 
-        def parse(l, rgx):
+        def parse(line, rgx):
             r = re.compile(rgx)
-            m = r.search(l)
+            m = r.search(line)
             if not m:
-                raise RuntimeError("Failed to parse. (line:{})".format(l))
+                raise RuntimeError("Failed to parse. (line:{})".format(line))
             return m.groups()
 
         obj = Object()

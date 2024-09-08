@@ -20,7 +20,8 @@ def make_annotations(cls):
         return cls
 
     # make annotation from attributes
-    props = {k: v for k, v in cls.__dict__.items() if isinstance(v, getattr(bpy.props, '_PropertyDeferred', tuple))}
+    props = {k: v for k, v in cls.__dict__.items()
+             if isinstance(v, getattr(bpy.props, '_PropertyDeferred', tuple))}
     if props:
         if '__annotations__' not in cls.__dict__:
             setattr(cls, '__annotations__', {})
@@ -56,5 +57,5 @@ def get_object_select(obj):
 def get_object_mode(context):
     try:
         return context.object.mode
-    except:
+    except:     # noqa
         return context.mode

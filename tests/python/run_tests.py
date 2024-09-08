@@ -1,13 +1,13 @@
+import os
 import sys
 import unittest
 
 
 def test_main():
-    import os
     path = os.path.dirname(__file__)
     sys.path.append(path)
 
-    import blender_mqo_test
+    import blender_mqo_test     # pylint: disable=C0415
 
     test_cases = [
         blender_mqo_test.import_test.TestImportMqo,

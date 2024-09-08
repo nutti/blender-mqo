@@ -235,13 +235,13 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
             mtrl_map[mtrl_idx] = []
         mtrl_map[mtrl_idx].append(i)
 
-    for mtrl_idx in mtrl_map:
+    for mtrl_idx, face_indices in mtrl_map.items():
         bm = bmesh.from_edit_mesh(new_obj.data)
         bm.faces.ensure_lookup_table()
         # set material
         for face in bm.faces:
             face.select = False
-        for face_idx in mtrl_map[mtrl_idx]:
+        for face_idx in face_indices:
             bm.faces[face_idx].select = True
             if has_uvmap and compat.check_version(2, 80, 0) < 0:
                 tex_layer = bm.faces.layers.tex.verify()
@@ -316,10 +316,10 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
 
             # make faces
             for lo in link_groups:
-                for l in lo:
+                for li in lo:
                     face_verts = [
-                        l[0], l[1],
-                        axis_aligned_verts[l[1]], axis_aligned_verts[l[0]],
+                        li[0], li[1],
+                        axis_aligned_verts[li[1]], axis_aligned_verts[li[0]],
                     ]
                     bm.faces.new(face_verts)
 
@@ -585,11 +585,11 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
             mqo_face.vertex_indices = [v.index for v in face.verts]
             if len(bm.loops.layers.uv.keys()) > 0:
                 uv_layer = bm.loops.layers.uv.verify()
-                for l in face.loops:
+                for lo in face.loops:
                     if mqo_face.uv_coords is None:
                         mqo_face.uv_coords = []
-                    mqo_face.uv_coords.append([l[uv_layer].uv[0],
-                                               1 - l[uv_layer].uv[1]])
+                    mqo_face.uv_coords.append([lo[uv_layer].uv[0],
+                                               1 - lo[uv_layer].uv[1]])
             mqo_obj.add_face(mqo_face)
 
         # materials
@@ -745,15 +745,15 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
             return
         prefs = user_prefs.addons["blender_mqo"].preferences
 
-        if (prefs.selective_import and
-                self.prev_selected_file != self.properties.filepath):
+        if (prefs.selective_import
+                and self.prev_selected_file != self.properties.filepath):
             self.num_valid_objects = 0
             self.num_valid_materials = 0
             mqo_file = mqo.MqoFile()
             try:
                 mqo_file.load(self.properties.filepath)
                 self.is_valid_mqo_file = True
-            except:
+            except:     # noqa
                 self.is_valid_mqo_file = False
                 self.invalid_mqo_file_reason = "Not MQO file."
 
@@ -802,8 +802,9 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         layout.label(text="File: {}".format(self.properties.filepath))
 
         layout.prop(self, "import_objects")
-        if (prefs.selective_import and self.import_objects and
-                self.num_valid_objects > 0):
+        if (prefs.selective_import
+                and self.import_objects
+                and self.num_valid_objects > 0):
             sp = compat.layout_split(layout, factor=0.01)
             sp.column()     # Spacer.
             sp = compat.layout_split(sp, factor=1.0)
@@ -814,8 +815,9 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
                     box.prop(oi, "import_", text=oi.object_name)
 
         layout.prop(self, "import_materials")
-        if (prefs.selective_import and self.import_materials and
-                self.num_valid_materials > 0):
+        if (prefs.selective_import
+                and self.import_materials
+                and self.num_valid_materials > 0):
             sp = compat.layout_split(layout, factor=0.01)
             sp.column()     # Spacer.
             sp = compat.layout_split(sp, factor=1.0)
@@ -973,7 +975,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         layout = self.layout
 
         object_to_vertex_groups = {}
-        for vg_idx in range(len(self.vertex_weights_to_export)):
+        for vg_idx in enumerate(self.vertex_weights_to_export):
             vg = self.vertex_weights_to_export[vg_idx]
             if vg.object_name not in object_to_vertex_groups:
                 object_to_vertex_groups[vg.object_name] = []
@@ -1034,7 +1036,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
             if obj.type != 'MESH':
                 continue
             vertex_groups[obj.name] = []    # TODO: Use export object property.
-        for vg_idx in range(len(self.vertex_weights_to_export)):
+        for vg_idx, _ in enumerate(self.vertex_weights_to_export):
             vg = self.vertex_weights_to_export[vg_idx]
             if vg.export_:
                 vertex_groups[vg.object_name].append(vg.vertex_group_name)

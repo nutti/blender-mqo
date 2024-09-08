@@ -24,7 +24,8 @@ class TestImportMqo(common.TestBase):
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
                                                  filepath=filepath)
 
-        self.assertEqual(len(bpy.data.objects), 0, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 0,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -35,7 +36,8 @@ class TestImportMqo(common.TestBase):
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
                                                  filepath=filepath)
 
-        self.assertEqual(len(bpy.data.objects), 0, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 0,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -46,12 +48,14 @@ class TestImportMqo(common.TestBase):
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
                                                  filepath=filepath)
 
-        self.assertEqual(len(bpy.data.objects), 0, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 0,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
 
-    def _valid_object(self, mqo_file, obj_name, expect_num_vert, expect_num_face):
+    def _valid_object(self, mqo_file, obj_name, expect_num_vert,
+                      expect_num_face):
         common.select_object_only(obj_name)
         bl_obj = bpy.data.objects[obj_name]
         if common.check_version(2, 80, 0) >= 0:
@@ -99,7 +103,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -117,7 +122,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -135,7 +141,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -153,7 +160,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 2, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 2,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -177,7 +185,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 1,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -201,7 +210,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 1,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -225,7 +235,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 2,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -250,7 +261,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 1,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 1, "Number of imported images")
@@ -270,7 +282,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -289,7 +302,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -308,7 +322,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
@@ -326,7 +341,8 @@ class TestImportMqo(common.TestBase):
                                                  add_import_prefix=False,
                                                  import_prefix="")
 
-        self.assertEqual(len(bpy.data.objects), 1, "Number of imported objects")
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
         self.assertEqual(len(bpy.data.materials), 0,
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")

@@ -74,6 +74,7 @@ def is_v3_same(v0, v1):
 
 
 def is_same(var1, var2, allowable_erorr=ALLOWABLE_ERROR):
+    # pylint: disable=R1705,R0911
     if (var1 is None) and (var2 is None):
         return True
     elif type(var1) != type(var2):  # pylint: disable=unidiomatic-typecheck
@@ -172,20 +173,23 @@ def valid_uvs(bl_obj, mqo_obj):
     bm = bmesh.from_edit_mesh(bl_obj.data)
     uv_layer = bm.loops.layers.uv.verify()
     for bl_face, mqo_face in zip(bm.faces, mqo_obj.get_faces(uniq=True)):
-        bl_uvs = [[l[uv_layer].uv[0], l[uv_layer].uv[1]]
-                  for l in bl_face.loops]
+        bl_uvs = [[lo[uv_layer].uv[0], lo[uv_layer].uv[1]]
+                  for lo in bl_face.loops]
         for bl_uv, mqo_uv in zip(bl_uvs, mqo_face.uv_coords):
-            # Metasequoia V-coordinate need to be inverted for meeting Blender V-coordinate.
+            # Metasequoia V-coordinate need to be inverted for meeting
+            # Blender V-coordinate.
             mqo_uv_corrected = mqo_uv.copy()
             mqo_uv_corrected[1] = 1 - mqo_uv_corrected[1]
             if not is_v2_same(bl_uv, mqo_uv_corrected):
-                print("UV coords do not match {} vs {}".format(bl_uv, mqo_uv_corrected))
+                print("UV coords do not match {} vs {}".format(
+                    bl_uv, mqo_uv_corrected))
                 return False
 
     return True
 
 
 def valid_mirror_modifier(bl_mod, mqo_obj):
+    # pylint: disable=R0911
     if check_version(2, 80, 0) >= 0:
         axis_index = mqo_obj.mirror_axis
         if axis_index & 0x1:
@@ -236,9 +240,8 @@ def valid_vertexattr(bl_obj, mqo_obj):
               .format(len(bl_weights.keys()), len(mqo_weights.keys())))
         return False
 
-    for vidx in bl_weights:
-        bl_w = bl_weights[vidx]
-        mqo_w = bl_weights[vidx]
+    for vidx, bl_w in bl_weights.items():
+        mqo_w = mqo_weights[vidx]
         if not is_float_same(bl_w, mqo_w):
             print("Vertexattr 'WEIT' value does not match {} vs {}"
                   .format(bl_w, mqo_w))
@@ -268,11 +271,11 @@ def check_addon_enabled(mod):
         result = bpy.ops.wm.addon_enable(module=mod)
     assert (result == {'FINISHED'}), "Failed to enable add-on {}".format(mod)
     if check_version(2, 80, 0) >= 0:
-        assert (mod in bpy.context.preferences.addons.keys()),\
-                "Failed to enable add-on {}".format(mod)
+        assert mod in bpy.context.preferences.addons.keys(),\
+               "Failed to enable add-on {}".format(mod)
     else:
-        assert (mod in bpy.context.user_preferences.addons.keys()),\
-                "Failed to enable add-on {}".format(mod)
+        assert mod in bpy.context.user_preferences.addons.keys(),\
+               "Failed to enable add-on {}".format(mod)
 
 
 def check_addon_disabled(mod):
@@ -282,19 +285,19 @@ def check_addon_disabled(mod):
         result = bpy.ops.wm.addon_disable(module=mod)
     assert (result == {'FINISHED'}), "Failed to disable add-on {}".format(mod)
     if check_version(2, 80, 0) >= 0:
-        assert (mod not in bpy.context.preferences.addons.keys()),\
-                "Failed to disable add-on {}".format(mod)
+        assert mod not in bpy.context.preferences.addons.keys(),\
+               "Failed to disable add-on {}".format(mod)
     else:
-        assert (mod not in bpy.context.user_preferences.addons.keys()),\
-                "Failed to disable add-on {}".format(mod)
+        assert mod not in bpy.context.user_preferences.addons.keys(),\
+               "Failed to disable add-on {}".format(mod)
 
 
 def operator_exists(idname):
     try:
-        from bpy.ops import op_as_string
+        from bpy.ops import op_as_string    # pylint: disable=C0415
         op_as_string(idname)
         return True
-    except:
+    except:     # noqa
         return False
 
 
@@ -313,7 +316,8 @@ class TestBase(unittest.TestCase):
     def setUpClass(cls):
         if cls.submodule_name is not None:
             print("\n======== Module Test: {}.{} ({}) ========"
-                  .format(cls.package_name, cls.module_name, cls.submodule_name))
+                  .format(cls.package_name, cls.module_name,
+                          cls.submodule_name))
         else:
             print("\n======== Module Test: {}.{} ========"
                   .format(cls.package_name, cls.module_name))
@@ -356,9 +360,11 @@ class TestBase(unittest.TestCase):
             check_addon_disabled(cls.package_name)
             for op in cls.idname:
                 if op[0] == 'OPERATOR':
-                    assert not operator_exists(op[1]), "Operator {} exists".format(op[1])
+                    assert not operator_exists(op[1]),\
+                           "Operator {} exists".format(op[1])
                 elif op[0] == 'MENU':
-                    assert not menu_exists(op[1]), "Menu %s exists".format(op[1])
+                    assert not menu_exists(op[1]),\
+                           "Menu {} exists".format(op[1])
         except AssertionError as e:
             print(e)
             sys.exit(1)
@@ -367,6 +373,7 @@ class TestBase(unittest.TestCase):
         bpy.ops.wm.open_mainfile(filepath=TESTEE_FILE)
         self.setUpEachMethod()
 
+    # pylint: disable=C0103
     def setUpEachMethod(self):
         pass
 

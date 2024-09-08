@@ -15,6 +15,7 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
+    # pylint: disable=E0601
     importlib.reload(utils)
     utils.bl_class_registry.BlClassRegistry.cleanup()
     importlib.reload(preferences)
@@ -25,20 +26,22 @@ else:
     from . import preferences
     from . import ops
 
+# pylint: disable=C0413
 import os
 
 
-def register_updater(bl_info):
+def register_updater(info):
     config = utils.addon_updater.AddonUpdatorConfig()
     config.owner = "nutti"
     config.repository = "blender-mqo"
     config.current_addon_path = os.path.dirname(os.path.realpath(__file__))
     config.branches = ["master", "develop"]
-    config.addon_directory = config.current_addon_path[:config.current_addon_path.rfind(utils.addon_updater.get_separator())]
-    config.min_release_version = bl_info["version"]
+    ridx = config.current_addon_path.rfind(utils.addon_updater.get_separator())
+    config.addon_directory = config.current_addon_path[:ridx]
+    config.min_release_version = info["version"]
     config.target_addon_path = "src/blender_mqo"
     updater = utils.addon_updater.AddonUpdatorManager.get_instance()
-    updater.init(bl_info, config)
+    updater.init(config)
 
 
 def register():
