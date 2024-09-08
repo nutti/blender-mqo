@@ -1,0 +1,64 @@
+---
+name: Release
+
+on:   # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - master
+      - 'release/v**'
+      - 'run-ci/**'
+    tags:
+      - 'v*'
+  pull_request:
+
+jobs:
+  pack-github-release:
+    name: Pack add-on's sources for GitHub Release
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Compress add-on's sources
+        run: |
+          mkdir release-github-release
+          cd src
+          zip -r blender_mqo.zip blender_mqo
+          cd ..
+          mv src/blender_mqo.zip release-github-release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: blender_mqo-github-release
+          path: "release-github-release"
+
+  publish-github-release:
+    name: Publish for GitHub Release
+    needs: pack-github-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Fetch Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: dist
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_FOR_ACTIONS }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: true
+          prerelease: false
+      - name: Publish Add-on to GitHub Release Page
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_FOR_ACTIONS }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/blender_mqo-github-release/blender_mqo.zip
+          asset_name: blender_mqo.zip
+          asset_content_type: application/zip

@@ -1,0 +1,55 @@
+name: blender-mqo CI
+
+on:
+  push:
+    branches:
+      - master
+      - 'release/v**'
+      - 'run-ci/**'
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Test add-on
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+
+      - name: Get required packages for Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender wget python3 python3-pip zip libglu1-mesa
+
+      - name: Get required pip packages
+        run: pip3 install -r requirements.txt
+
+      - name: Download Blender (2.7x)
+        run: |
+          wget http://mirror.cs.umn.edu/blender.org/release/Blender2.77/blender-2.77-linux-glibc211-x86_64.tar.bz2
+          tar jxf blender-2.77-linux-glibc211-x86_64.tar.bz2
+
+      - name: Copy add-on to Blender add-on's directory (2.7x)
+        run: cp -r src/blender_mqo blender-2.77-linux-glibc211-x86_64/2.77/scripts/addons
+
+      - name: Run add-on unittest (2.7x)
+        run: blender-2.77-linux-glibc211-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+
+      - name: Download Blender (2.8x)
+        run: |
+          wget https://download.blender.org/release/Blender2.80/blender-2.80-linux-glibc217-x86_64.tar.bz2
+          tar jxf blender-2.80-linux-glibc217-x86_64.tar.bz2
+
+      - name: Copy add-on to Blender add-on's directory (2.8x)
+        run: cp -r src/blender_mqo blender-2.80-linux-glibc217-x86_64/2.80/scripts/addons
+
+      - name: Run add-on unittest (2.8x)
+        run: blender-2.80-linux-glibc217-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
