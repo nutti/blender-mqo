@@ -22,7 +22,7 @@ Before installing Screencast Keys add-on, check if
 |Version|Download URL|
 |---|---|
 |*unstable*|[Download](https://github.com/nutti/blender-mqo/archive/master.zip)|
-|1.4.0|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.4.0)|
+|1.4|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.4.0)|
 |1.3|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.3)|
 |1.2|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.2)|
 |1.1|[Download](https://github.com/nutti/blender-mqo/releases/tag/v1.1)|
