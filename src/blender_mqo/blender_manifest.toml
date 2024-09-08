@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+
+id = "blender_mqo"
+version = "1.5.0"
+name = "MQO (Metasequoia) Format File Importer/Exporter"
+tagline = "Import/Export MQO format files"
+maintainer = "nutti <nutti.metro@gmail.com>"
+type = "add-on"
+
+website = "https://github.com/nutti/blender-mqo"
+permissions = ["files"]
+tags = ["Import-Export"]
+blender_version_min = "4.2.0"
+license = [
+  "SPDX:MIT",
+]
