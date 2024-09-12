@@ -40,6 +40,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
+      - name: Run scripts for the code removing
+        run: |
+          bash tools/remove_code_extensions.blender.org.sh src tmp
+
       - name: Compress add-on's sources
         run: |
           mkdir release-extensions.blender.org

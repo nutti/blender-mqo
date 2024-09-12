@@ -43,14 +43,14 @@ jobs:
       # - name: Run add-on unittest (2.7x)
       #   run: blender-bin/blender-v2.78-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
 
-      - name: Download Blender (2.8x)
-        run: bash tools/download_blender.sh 2.80 blender-bin
+      # - name: Download Blender (2.8x)
+      #   run: bash tools/download_blender.sh 2.80 blender-bin
 
-      - name: Copy add-on to Blender add-on's directory (2.8x)
-        run: cp -r src/blender_mqo blender-bin/blender-v2.80-bin/2.80/scripts/addons
+      # - name: Copy add-on to Blender add-on's directory (2.8x)
+      #   run: cp -r src/blender_mqo blender-bin/blender-v2.80-bin/2.80/scripts/addons
 
-      - name: Run add-on unittest (2.8x)
-        run: blender-bin/blender-v2.80-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+      # - name: Run add-on unittest (2.8x)
+      #   run: blender-bin/blender-v2.80-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
 
       - name: Download Blender (4.2)
         run: bash tools/download_blender.sh 4.2 blender-bin
