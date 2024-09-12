@@ -28,7 +28,7 @@ jobs:
           mv src/blender_mqo.zip release-github-release
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: blender_mqo-github-release
           path: "release-github-release"
@@ -49,7 +49,7 @@ jobs:
           mv tmp/src/blender_mqo.zip release-extensions.blender.org
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: blender_mqo-extensions.blender.org
           path: "release-extensions.blender.org"
