@@ -322,6 +322,7 @@ class TestBase(unittest.TestCase):
         if check_version(4, 2, 0) >= 0:
             cls.package_name = "bl_ext.user_default." + cls.package_name
         print("@@@" + cls.package_name)
+        print(bpy.app.version)
 
         if cls.submodule_name is not None:
             print("\n======== Module Test: {}.{} ({}) ========"
