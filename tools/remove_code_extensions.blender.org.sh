@@ -18,7 +18,7 @@ OUTPUT_DIR=${2}
 TMP_DIR=$(mktemp -d)
 
 REMOVE_FILES=(
-    "screencast_keys/utils/addon_updater.py"
+    "blender_mqo/utils/addon_updater.py"
 )
 
 mkdir -p "${OUTPUT_DIR}"

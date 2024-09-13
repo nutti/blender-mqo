@@ -28,6 +28,7 @@ else:
 
 
 def register():
+    utils.addon_updater.register_updater()   # extensions.blender.org: Delete line
     bpy.utils.register_class(ops.BLMQO_ObjectImportPropertyCollection)
     bpy.utils.register_class(ops.BLMQO_MaterialImportPropertyCollection)
     bpy.utils.register_class(ops.BLMQO_ObjectExportPropertyCollection)
