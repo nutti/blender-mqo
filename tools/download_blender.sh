@@ -4,13 +4,14 @@
 set -eEu
 
 SUPPORTED_VERSIONS=(
-    "2.78" "2.79" "2.80" "2.81" "2.82" "2.83"
+    "2.77" "2.78" "2.79" "2.80" "2.81" "2.82" "2.83"
     "2.90" "2.91" "2.92" "2.93"
     "3.0" "3.1" "3.2" "3.3" "3.4" "3.5" "3.6"
     "4.0" "4.1" "4.2"
 )
 
 declare -A BLENDER_DOWNLOAD_URL_LINUX_PATTERN=(
+    ["v2.78"]="blender-2\\.77([a-z])-linux.*?\\.tar\\.bz2"
     ["v2.78"]="blender-2\\.78([a-z])-linux.*?\\.tar\\.bz2"
     ["v2.79"]="blender-2\\.79([a-z])-linux.*?\\.tar\\.bz2"
     ["v2.80"]="blender-2\\.80-linux.*?\\.tar\\.bz2"
@@ -34,6 +35,7 @@ declare -A BLENDER_DOWNLOAD_URL_LINUX_PATTERN=(
 )
 
 declare -A BLENDER_CHECKSUM_URL_PATTERN=(
+    ["v2.77"]="release277([a-z])\\.md5"
     ["v2.78"]="release278([a-z])\\.md5"
     ["v2.79"]="release279([a-z])\\.md5"
     ["v2.80"]="release280\\.md5"
