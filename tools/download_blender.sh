@@ -11,7 +11,7 @@ SUPPORTED_VERSIONS=(
 )
 
 declare -A BLENDER_DOWNLOAD_URL_LINUX_PATTERN=(
-    ["v2.78"]="blender-2\\.77([a-z])-linux.*?\\.tar\\.bz2"
+    ["v2.77"]="blender-2\\.77([a-z])-linux.*?\\.tar\\.bz2"
     ["v2.78"]="blender-2\\.78([a-z])-linux.*?\\.tar\\.bz2"
     ["v2.79"]="blender-2\\.79([a-z])-linux.*?\\.tar\\.bz2"
     ["v2.80"]="blender-2\\.80-linux.*?\\.tar\\.bz2"
