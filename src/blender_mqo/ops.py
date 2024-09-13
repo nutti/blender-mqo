@@ -743,7 +743,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         user_prefs = compat.get_user_preferences(context)
         if user_prefs is None:
             return
-        prefs = user_prefs.addons["blender_mqo"].preferences
+        prefs = user_prefs.addons[__package__].preferences
 
         if (prefs.selective_import
                 and self.prev_selected_file != self.properties.filepath):
@@ -837,7 +837,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         user_prefs = compat.get_user_preferences(context)
-        prefs = user_prefs.addons["blender_mqo"].preferences
+        prefs = user_prefs.addons[__package__].preferences
 
         if prefs.selective_import and not self.is_valid_mqo_file:
             self.report(
@@ -875,7 +875,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     def invoke(self, context, _):
         wm = context.window_manager
         user_prefs = compat.get_user_preferences(context)
-        prefs = user_prefs.addons["blender_mqo"].preferences
+        prefs = user_prefs.addons[__package__].preferences
 
         self.objects_to_import.clear()
         self.materials_to_import.clear()
