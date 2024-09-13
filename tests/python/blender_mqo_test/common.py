@@ -320,7 +320,7 @@ class TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if check_version(4, 2, 0) >= 0:
-            cls.package_name += "bl_ext.user_default"
+            cls.package_name = "bl_ext.user_default." + cls.package_name
 
         if cls.submodule_name is not None:
             print("\n======== Module Test: {}.{} ({}) ========"
