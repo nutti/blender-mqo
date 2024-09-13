@@ -837,6 +837,8 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         user_prefs = compat.get_user_preferences(context)
+        print(__package__)
+        print(list(user_prefs.addons.keys()))
         prefs = user_prefs.addons[__package__].preferences
 
         if prefs.selective_import and not self.is_valid_mqo_file:

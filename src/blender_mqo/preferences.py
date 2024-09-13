@@ -11,7 +11,7 @@ from .utils import compatibility as compat
 @BlClassRegistry()
 @compat.make_annotations
 class BLMQO_Preferences(bpy.types.AddonPreferences):
-    bl_idname = "blender_mqo"
+    bl_idname = __package__
 
     # for Config.
     selective_import = BoolProperty(
