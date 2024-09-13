@@ -312,13 +312,16 @@ def menu_exists(idname):
 
 class TestBase(unittest.TestCase):
 
-    package_name = "bl_ext.user_default.blender_mqo"
+    package_name = "blender_mqo"
     module_name = ""
     submodule_name = None
     idname = []
 
     @classmethod
     def setUpClass(cls):
+        if check_version(4, 2, 0) >= 0:
+            cls.package_name += "bl_ext.user_default"
+
         if cls.submodule_name is not None:
             print("\n======== Module Test: {}.{} ({}) ========"
                   .format(cls.package_name, cls.module_name,
