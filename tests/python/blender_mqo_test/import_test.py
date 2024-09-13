@@ -2,7 +2,7 @@ import os
 
 import bpy
 
-from bl_ext.user_default.blender_mqo.utils.mqo_file import MqoFile
+from .mqo_file import MqoFile
 from . import common
 
 

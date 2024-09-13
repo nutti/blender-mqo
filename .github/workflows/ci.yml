@@ -61,5 +61,7 @@ jobs:
           cp -r src/blender_mqo ~/.config/blender/4.2/extensions/user_default
 
       - name: Run add-on unittest (4.2)
-        run: blender-bin/blender-v4.2-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+        run: |
+          cp src/blender_mqo/utils/mqo_file.py tests/python/blender_mqo_test
+          blender-bin/blender-v4.2-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
 
