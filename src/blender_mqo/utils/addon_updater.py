@@ -20,16 +20,16 @@ def get_separator():
 def register_updater():
     config = AddonUpdaterConfig()
     config.owner = "nutti"
-    config.repository = "Screencast-Keys"
-    config.current_addon_path = os.path.dirname(os.path.realpath(__file__))
-    config.branches = ["master", "develop"]
+    config.repository = "blender-mqo"
+    config.current_addon_path = os.path.dirname(
+        os.path.dirname(os.path.realpath(__file__)))
+    config.branches = ["master"]
     ridx = config.current_addon_path.rfind(get_separator())
     config.addon_directory = config.current_addon_path[:ridx]
-    config.min_release_version = (4, 0, 0)
-    config.default_target_addon_path = "screencast_keys"
+    config.min_release_version = (1, 4, 0)
+    config.default_target_addon_path = "blender_mqo"
     config.target_addon_path = {
-        "master": "src{}screencast_keys".format(get_separator()),
-        "develop": "src{}screencast_keys".format(get_separator()),
+        "master": "src{}blender_mqo".format(get_separator()),
     }
     updater = AddonUpdaterManager.get_instance()
     updater.init(config)
@@ -169,10 +169,16 @@ class AddonUpdaterConfig:
         #   e.g. (5, 2) if your release tag name is "v5.2"
         # If you specify (-1, -1), ignore versions less than current add-on
         # version specified in bl_info.
-        self.min_release_version = (-1, -1)
+        self.min_release_version = (-1, -1, -1)
 
         # Target add-on path
-        self.target_addon_path = ""
+        # {"branch/tag": "add-on path"}
+        self.target_addon_path = {}
+
+        # Default target add-on path.
+        # Search this path if branch/tag is not found in
+        # self.target_addon_path.
+        self.default_target_addon_path = ""
 
         # Current add-on path
         self.current_addon_path = ""

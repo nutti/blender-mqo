@@ -62,4 +62,3 @@ jobs:
 
       - name: Run add-on unittest (4.2)
         run: blender-bin/blender-v4.2-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
-

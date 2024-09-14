@@ -304,7 +304,7 @@ def operator_exists(idname):
             from bpy.ops import _op_as_string   # pylint: disable=C0415
             _op_as_string(idname)
             return True
-        except: # pylint: disable=W0702 # noqa
+        except:     # pylint: disable=W0702 # noqa
             return False
 
 

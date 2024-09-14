@@ -6,7 +6,7 @@ from bpy.props import (
     EnumProperty,
 )
 
-from .utils.addon_updater import AddonUpdatorManager    # extensions.blender.org: Delete line
+from .utils.addon_updater import AddonUpdatorManager    # extensions.blender.org: Delete line   # noqa
 from .utils.bl_class_registry import BlClassRegistry
 from .utils import compatibility as compat
 
@@ -76,7 +76,7 @@ class BLMQO_Preferences(bpy.types.AddonPreferences):
         description="Preferences Category",
         items=[
             ('CONFIG', "Configuration", "Configuration about this add-on"),
-            ('UPDATE', "Update", "Update this add-on"),     # extensions.blender.org: Delete line
+            ('UPDATE', "Update", "Update this add-on"),     # extensions.blender.org: Delete line   # noqa
         ],
         default='CONFIG'
     )
