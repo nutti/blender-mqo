@@ -2,6 +2,8 @@
 
 blender-mqo is an importer/exporter between Blender and Metasequoia via .mqo files.
 
+![blender-mqo Thumbnail](docs/images/thumbnail.png)
+
 *To realize the long support of this add-on, your support is helpful.*
 *You can support the development of this add-on via*
 **[GitHub Sponsors](https://github.com/sponsors/nutti)**.
