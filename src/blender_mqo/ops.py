@@ -975,7 +975,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         layout = self.layout
 
         object_to_vertex_groups = {}
-        for vg_idx in enumerate(self.vertex_weights_to_export):
+        for vg_idx, _ in enumerate(self.vertex_weights_to_export):
             vg = self.vertex_weights_to_export[vg_idx]
             if vg.object_name not in object_to_vertex_groups:
                 object_to_vertex_groups[vg.object_name] = []
