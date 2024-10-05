@@ -6,7 +6,7 @@ from bpy.props import (
     EnumProperty,
 )
 
-from .utils.addon_updater import AddonUpdatorManager    # extensions.blender.org: Delete line # pylint: disable=C0301 # noqa
+from .utils.addon_updater import AddonUpdaterManager    # extensions.blender.org: Delete line # pylint: disable=C0301 # noqa
 from .utils.bl_class_registry import BlClassRegistry
 from .utils import compatibility as compat
 
@@ -20,7 +20,7 @@ class BLMQO_OT_CheckAddonUpdate(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, _):
-        updater = AddonUpdatorManager.get_instance()
+        updater = AddonUpdaterManager.get_instance()
         updater.check_update_candidate()
 
         return {'FINISHED'}
