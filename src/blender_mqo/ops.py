@@ -952,6 +952,16 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
             items.append((obj.name, obj.name, obj.name))
         return items
 
+    export_mode = EnumProperty(
+        name="Export Mode",
+        description="Export Mode",
+        items=[
+            ('SELECTED_OBJECT', "Selected Objects", "Export selected objects"),
+            ('MANUAL', "Manual", "Export manually selected assets"),
+        ],
+        default='SELECTED_OBJECT',
+    )
+
     export_objects = BoolProperty(name="Export Objects", default=True)
     objects_to_export = bpy.props.CollectionProperty(
         name="Objects to Export",
@@ -983,46 +993,52 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
     def draw(self, _):
         layout = self.layout
 
-        object_to_vertex_groups = {}
-        for vg_idx, _ in enumerate(self.vertex_weights_to_export):
-            vg = self.vertex_weights_to_export[vg_idx]
-            if vg.object_name not in object_to_vertex_groups:
-                object_to_vertex_groups[vg.object_name] = []
-            object_to_vertex_groups[vg.object_name].append(vg)
+        layout.prop(self, "export_mode")
 
-        layout.prop(self, "export_objects")
-        if self.export_objects and len(self.objects_to_export) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()     # Spacer.
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for oe in self.objects_to_export:
-                box.prop(oe, "export_", text=oe["object_name"])
+        if self.export_mode == 'SELECTED_OBJECT':
+            layout.prop(self, "export_materials")
+            layout.prop(self, "export_vertex_weights")
+        elif self.export_mode == 'MANUAL':
+            object_to_vertex_groups = {}
+            for vg_idx, _ in enumerate(self.vertex_weights_to_export):
+                vg = self.vertex_weights_to_export[vg_idx]
+                if vg.object_name not in object_to_vertex_groups:
+                    object_to_vertex_groups[vg.object_name] = []
+                object_to_vertex_groups[vg.object_name].append(vg)
 
-        layout.prop(self, "export_materials")
-        if self.export_materials and len(self.materials_to_export) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()     # Spacer.
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for me in self.materials_to_export:
-                box.prop(me, "export_", text=me["material_name"])
-
-        layout.prop(self, "export_vertex_weights")
-        if self.export_vertex_weights:
-            layout.prop(self, "objects_for_vertex_weights")
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()   # Spacer.
-            for obj_name, vertex_groups in object_to_vertex_groups.items():
-                if obj_name != self.objects_for_vertex_weights:
-                    continue
+            layout.prop(self, "export_objects")
+            if self.export_objects and len(self.objects_to_export) > 0:
+                sp = compat.layout_split(layout, factor=0.01)
+                sp.column()     # Spacer.
+                sp = compat.layout_split(sp, factor=1.0)
+                col = sp.column()
                 box = col.box()
-                for group in vertex_groups:
-                    box.prop(group, "export_", text=group.vertex_group_name)
+                for oe in self.objects_to_export:
+                    box.prop(oe, "export_", text=oe["object_name"])
+
+            layout.prop(self, "export_materials")
+            if self.export_materials and len(self.materials_to_export) > 0:
+                sp = compat.layout_split(layout, factor=0.01)
+                sp.column()     # Spacer.
+                sp = compat.layout_split(sp, factor=1.0)
+                col = sp.column()
+                box = col.box()
+                for me in self.materials_to_export:
+                    box.prop(me, "export_", text=me["material_name"])
+
+            layout.prop(self, "export_vertex_weights")
+            if self.export_vertex_weights:
+                layout.prop(self, "objects_for_vertex_weights")
+                sp = compat.layout_split(layout, factor=0.01)
+                sp.column()
+                sp = compat.layout_split(sp, factor=1.0)
+                col = sp.column()   # Spacer.
+                for obj_name, vertex_groups in object_to_vertex_groups.items():
+                    if obj_name != self.objects_for_vertex_weights:
+                        continue
+                    box = col.box()
+                    for group in vertex_groups:
+                        box.prop(group, "export_", text=group.vertex_group_name)
 
         layout.prop(self, "add_export_prefix")
         if self.add_export_prefix:
@@ -1032,17 +1048,36 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         if not self.properties.filepath:
             raise ValueError("Filepath is not set")
 
-        exclude_objects = [
-            oe.object_name
-            for oe in self.objects_to_export
-            if not oe.export_
-        ]
-        exclude_materials = [
-            me.material_name
-            for me in self.materials_to_export
-            if not me.export_
-        ]
+        exclude_objects = set()
+        exclude_materials = set()
         vertex_groups = {}
+
+        if self.export_mode == 'SELECTED_OBJECT':
+            exclude_objects = {
+                o.object_name
+                for o in bpy.data.objects
+                if not o.select_get()
+            }
+
+            used_materials = set()
+            for obj in bpy.data.objects:
+                if obj.name in exclude_objects:
+                    continue
+                for mtrl_slot in obj.material_slots:
+                    used_materials.add(mtrl_slot.material.name)
+            all_materials = {m.name for m in bpy.data.materials}
+            exclude_materials = all_materials - used_materials
+        elif self.export_mode == 'MANUAL':
+            exclude_objects = {
+                oe.object_name
+                for oe in self.objects_to_export
+                if not oe.export_
+            }
+            exclude_materials = {
+                me.material_name
+                for me in self.materials_to_export
+                if not me.export_
+            }
 
         for obj in bpy.data.objects:
             if obj.type != 'MESH':
