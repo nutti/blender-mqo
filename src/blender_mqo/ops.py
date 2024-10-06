@@ -729,7 +729,10 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         name="Group Name",
         default="Vertex Weights Group"
     )
-    add_import_prefix = BoolProperty(name="Add Import Prefix", default=True)
+    add_import_prefix = BoolProperty(
+        name="Add Import Prefix to Asset Names",
+        default=True
+    )
     import_prefix = StringProperty(name="Prefix", default="[Imported] ")
 
     prev_selected_file = ""
@@ -836,6 +839,9 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
             layout.prop(self, "import_prefix")
 
     def execute(self, context):
+        if not self.properties.filepath:
+            raise ValueError("Filepath is not set")
+
         user_prefs = compat.get_user_preferences(context)
         prefs = user_prefs.addons[__package__].preferences
 
@@ -935,7 +941,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
     bl_options = {'REGISTER', 'UNDO'}
 
     filename_ext = ".mqo"
-    filter_glob = StringProperty(default="*.mqo")
+    filter_glob = StringProperty(default="*.mqo", options={'HIDDEN'})
 
     def get_objects_for_vertex_weights(self, context):
         # TODO: select only objects to export.
@@ -968,7 +974,10 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         name="Object",
         items=get_objects_for_vertex_weights,
     )
-    add_export_prefix = BoolProperty(name="Add Export Prefix", default=True)
+    add_export_prefix = BoolProperty(
+        name="Add Export Prefix to Asset Names",
+        default=True
+    )
     export_prefix = StringProperty(name="Prefix", default="[Exported] ")
 
     def draw(self, _):
@@ -1020,6 +1029,9 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
             layout.prop(self, "export_prefix")
 
     def execute(self, _):
+        if not self.properties.filepath:
+            raise ValueError("Filepath is not set")
+
         exclude_objects = [
             oe.object_name
             for oe in self.objects_to_export
@@ -1054,7 +1066,9 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
 
         return {'FINISHED'}
 
-    def invoke(self, context, _):
+    def invoke(self, context, event):
+        self.properties.filepath = "untitled.mqo"
+
         wm = context.window_manager
 
         self.objects_to_export.clear()
