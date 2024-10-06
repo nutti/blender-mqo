@@ -1090,13 +1090,11 @@ def topbar_mt_file_import_fn(self, _):
     layout = self.layout
 
     layout.operator(BLMQO_OT_ImportMqo.bl_idname,
-                    text="Metasequoia (.mqo)",
-                    icon='PLUGIN')
+                    text="Metasequoia (.mqo)")
 
 
 def topbar_mt_file_export_fn(self, _):
     layout = self.layout
 
     layout.operator(BLMQO_OT_ExportMqo.bl_idname,
-                    text="Metasequoia (.mqo)",
-                    icon='PLUGIN')
+                    text="Metasequoia (.mqo)")
