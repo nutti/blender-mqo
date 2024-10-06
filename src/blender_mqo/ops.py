@@ -431,6 +431,8 @@ def export_material_v280(mqo_file, material):
         mqo_mtrl.texture_map = bpy.path.basename(material_node.image.filepath)
         mqo_mtrl.projection_type = BLENDER_TO_MQO_PROJECTION_TYPE[
             material_node.projection]
+    else:
+        return
 
     mqo_file.add_material(mqo_mtrl)
 
@@ -1054,7 +1056,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
 
         if self.export_mode == 'SELECTED_OBJECT':
             exclude_objects = {
-                o.object_name
+                o.name
                 for o in bpy.data.objects
                 if not o.select_get()
             }
