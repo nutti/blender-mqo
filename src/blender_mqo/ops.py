@@ -427,6 +427,12 @@ def export_material_v280(mqo_file, material):
         mqo_mtrl.specular = material_node.inputs["Specular"].default_value[0]
         mqo_mtrl.emissive =\
             material_node.inputs["Emissive Color"].default_value[0]
+    elif material_node.type == 'BSDF_PRINCIPLED':
+        mqo_mtrl.color = material_node.inputs["Base Color"].default_value
+        mqo_mtrl.specular =\
+            material_node.inputs["Specular Tint"].default_value[0]
+        mqo_mtrl.emissive =\
+            material_node.inputs["Emission Color"].default_value[0]
     elif material_node.type == 'TEX_IMAGE':
         mqo_mtrl.texture_map = bpy.path.basename(material_node.image.filepath)
         mqo_mtrl.projection_type = BLENDER_TO_MQO_PROJECTION_TYPE[
