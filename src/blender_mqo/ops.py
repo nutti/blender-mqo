@@ -195,6 +195,12 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
                 bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
                 bm_face.loops[j][uv_layer].uv[1] = \
                     1 - bm_face.loops[j][uv_layer].uv[1]
+
+        # set normal if exists
+        if face.normals is not None:
+            bm_face.normal = face.normals[0]
+            bpy.data.objects[0].data.normals_split_custom_set()
+
         bm_faces.append(bm_face)
 
     # Before importing vertex weights, we need to fix the IDs of BMVert.

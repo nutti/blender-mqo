@@ -635,6 +635,7 @@ class Face:
         self._vertex_indices = None
         self._material = None
         self._uv_coords = None
+        self._normals = None
         self._colors = None
         self._crs = None
 
@@ -677,6 +678,16 @@ class Face:
     @uv_coords.setter
     def uv_coords(self, uv_coords_):
         self._uv_coords = uv_coords_
+
+    @property
+    def normals(self):
+        if self._normals is None:
+            return None
+        return self._normals
+    
+    @normals.setter
+    def normals(self, normals_):
+        self._normals = normals_
 
     @property
     def colors(self):
@@ -728,6 +739,10 @@ class Face:
                 coords = [x for uv in self._uv_coords for x in uv]
                 coords_str = ["{:.5f}".format(c) for c in coords]
                 s += " UV({})".format(" ".join(coords_str))
+            if self._normals is not None:
+                normals = [x for normal in self._normals for x in normal]
+                normals_str = ["{:.6f}".format(n) for n in normals]
+                s += " N({})".format(" ".join(normals_str))
             if self._colors is not None:
                 colors = ["{}".format(c) for c in self._colors]
                 s += " COL({})".format(" ".join(colors))
@@ -1681,6 +1696,18 @@ class MqoFile:
                                        "(expects {}, but {}"
                                        .format(face.ngons,
                                                len(face.uv_coords)))
+
+            result = parse(line, rb"[0-9]+.* N\(([-0-9\. ]+)\)")
+            if result:
+                normals_str_raw = [c for c in decode(result[0]).split(" ")]
+                normals_indices_str = normals_str_raw[:len(normals_str_raw) // 4]
+                normals = normals_str_raw[len(normals_str_raw) // 4:]
+                face.normals = [[float(x), float(y), float(z)] for x, y, z in zip(normals[::3], normals[1::3], normals[2::3])]
+                if face.ngons != len(face.normals):
+                    raise RuntimeError("Number of Normals does not match "
+                                       "(expects {}, but {}"
+                                       .format(face.ngons,
+                                               len(face.normals)))
 
             result = parse(line, rb"[0-9]+.* COL\(([0-9 ]+)\)")
             if result:
