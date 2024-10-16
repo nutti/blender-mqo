@@ -1046,7 +1046,8 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
                         continue
                     box = col.box()
                     for group in vertex_groups:
-                        box.prop(group, "export_", text=group.vertex_group_name)
+                        box.prop(group, "export_",
+                                 text=group.vertex_group_name)
 
         layout.prop(self, "add_export_prefix")
         if self.add_export_prefix:
@@ -1064,7 +1065,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
             exclude_objects = {
                 o.name
                 for o in bpy.data.objects
-                if not o.select_get()
+                if not compat.get_object_select(o)
             }
 
             used_materials = set()

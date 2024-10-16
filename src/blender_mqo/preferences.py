@@ -41,14 +41,14 @@ class BLMQO_OT_UpdateAddon(bpy.types.Operator):
     )
 
     def execute(self, _):
-        updater = AddonUpdatorManager.get_instance()
+        updater = AddonUpdaterManager.get_instance()
         updater.update(self.branch_name)
 
         return {'FINISHED'}
 
 
 def get_update_candidate_branches(_, __):
-    updater = AddonUpdatorManager.get_instance()
+    updater = AddonUpdaterManager.get_instance()
     if not updater.candidate_checked():
         return []
 
@@ -119,7 +119,7 @@ class BLMQO_Preferences(bpy.types.AddonPreferences):
 
 # extensions.blender.org: Delete block start
         elif self.category == 'UPDATE':
-            updater = AddonUpdatorManager.get_instance()
+            updater = AddonUpdaterManager.get_instance()
 
             layout.separator()
 
