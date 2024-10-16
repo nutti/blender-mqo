@@ -590,7 +590,8 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
         for face in bm.faces:
             mqo_face = mqo.Face()
             mqo_face.ngons = len(face.verts)
-            mqo_face.vertex_indices = [v.index for v in reversed(face.verts)]
+            # mqo_face.vertex_indices = [v.index for v in reversed(face.verts)]
+            mqo_face.vertex_indices = [v.index for v in face.verts]
             if len(bm.loops.layers.uv.keys()) > 0:
                 uv_layer = bm.loops.layers.uv.verify()
                 for lo in face.loops:
