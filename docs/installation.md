@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD024 -->
+
 # Installation
 
 Before installing blender-mqo add-on, check if
@@ -34,7 +36,8 @@ You can install this add-on from there.
 1. Launch Blender and open the preference window by clicking *Edit* >
    *Preferences ...*.
 2. Click *Get Extensions* in the preference window.
-3. Search **MQO (Metasequoia) Format File Importer/Exporter** and click *Install* button.
+3. Search **MQO (Metasequoia) Format File Importer/Exporter** and click
+   *Install* button.
 
 ## Blender's Installation Tool (from Disk)
 
