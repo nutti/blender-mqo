@@ -27,15 +27,36 @@ the objects/materials to import upto the limit specified by
 1. Click *File* > *Export* > *Metasequoia (.mqo)*.
 2. Select .mqo file to export. You can change the export behaviour by
    changing the options.
-   * *Export Objects* : The add-on will export objects if enabled.
-   * *Export Materials* : The add-on will export materials if enabled.
-   * *Export Vertex Weights* : The add-on will export vertex weights
-     if enabled.
-   * *Add Export Prefix* : Add a prefix string to the name of exported
-     objects/materials
 3. Click *Export Metasequoia file (.mqo)*.
 
-### Export Vertex Weights
+Other options effect will be changed by the *Export Mode* option.
+
+### Export Mode: Selected Objects
+
+Export only selected objects in *3D Viewport*.  
+Dependant assets will be exported as well if options are specified.
+
+* *Export Materials* : The add-on will export selected materials if enabled.
+* *Export Vertex Weights* : The add-on will export selected vertex weights
+  if enabled.
+* *Add Export Prefix* : Add a prefix string to the name of exported
+  objects/materials
+
+### Export Mode: Manual
+
+Export assets selected manually by name.  
+Dependency among assets are not taken into account.
+
+* *Export Objects* : The add-on will export selected objects if enabled.
+* *Export Materials* : The add-on will export selected materials if enabled.
+* *Export Vertex Weights* : The add-on will export selected vertex weights
+  if enabled.
+* *Add Export Prefix* : Add a prefix string to the name of exported
+  objects/materials
+
+## Note
+
+### About "Export Vertex Weights" option
 
 The vertex weights will be exported after merging the values among
 the selected vertex groups.
