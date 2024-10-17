@@ -2,7 +2,14 @@
 
 # Change Log
 
-## [Unreleased](https://github.com/nutti/blender-mqo/compare/v1.4.0...master)
+## [Unreleased](https://github.com/nutti/blender-mqo/compare/v2.0.0...master)
+
+<!-- markdownlint-disable-next-line MD013 -->
+## [Version 2.0.0](https://github.com/nutti/blender-mqo/compare/v1.4.0...v2.0.0) - 2024.X.XX
+
+### Notice
+
+From this version, the blender-mqo add-on is available at [extensions.blender.org](https://extensions.blender.org/add-ons/screencast-keys/).
 
 <!-- markdownlint-disable-next-line MD013 -->
 ## [Version 1.4.0](https://github.com/nutti/blender-mqo/compare/v1.3...v1.4.0) - 2024.9.8
