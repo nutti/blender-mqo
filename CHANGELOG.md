@@ -9,7 +9,7 @@
 
 ### Notice
 
-From this version, the blender-mqo add-on is available at [extensions.blender.org](https://extensions.blender.org/add-ons/screencast-keys/).
+From this version, the blender-mqo add-on is available at [extensions.blender.org](https://extensions.blender.org/add-ons/blender-mqo/).
 
 <!-- markdownlint-disable-next-line MD013 -->
 ## [Version 1.4.0](https://github.com/nutti/blender-mqo/compare/v1.3...v1.4.0) - 2024.9.8
