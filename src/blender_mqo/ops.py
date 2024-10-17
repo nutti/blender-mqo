@@ -144,17 +144,17 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
 
     # construct mesh
     new_mesh = bpy.context.object.data
-    bm = bmesh.new()
 
-    bm_verts = [bm.verts.new(v) for v in mqo_obj.get_vertices()]
-    bm_faces = []
+    new_mesh.vertices.add(len(mqo_obj.get_vertices()))
+    for i, v in enumerate(mqo_obj.get_vertices()):
+        new_mesh.vertices[i].co = v
     mqo_faces = mqo_obj.get_faces(uniq=True)
 
     vertex_weights = mqo_obj.get_vertexattr('WEIT')
     vertex_weighted_vertices = {}
     if vertex_weight_import_options.import_ and vertex_weights is not None:
         for vidx, weight in vertex_weights.items():
-            vertex_weighted_vertices[bm_verts[vidx]] = weight
+            vertex_weighted_vertices[new_mesh.vertices[vidx]] = weight
 
     # create UV map
     has_uvmap = False
@@ -162,13 +162,13 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
         if face.uv_coords is not None:
             has_uvmap = True
     uv_layer = None
-    if has_uvmap:
-        if bm.loops.layers.uv.items():
-            uv_layer = bm.loops.layers.uv[0]
-        else:
-            uv_layer = bm.loops.layers.uv.new()
+    # if has_uvmap:
+    #     if bm.loops.layers.uv.items():
+    #         uv_layer = bm.loops.layers.uv[0]
+    #     else:
+    #         uv_layer = bm.loops.layers.uv.new()
 
-    for face in mqo_faces:
+    for i, face in enumerate(mqo_faces):
         face_verts = []
 
         # Create face.
@@ -178,27 +178,33 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
             # Ex: (11, 12, 12) -> (v[11], v[12], new v)
             vidx = face.vertex_indices[j]
             if vidx in used_indices:
-                new_v = bm.verts.new(bm_verts[vidx].co)
+                new_v = new_mesh.vertices.add(1)
+                new_v.co = new_mesh.vertices[vidx].co
                 face_verts.append(new_v)
                 if vidx in vertex_weights.keys():
                     vertex_weighted_vertices[new_v] = vertex_weights[vidx]
                 print("Vertex {} is already used. Try to create new BMVert"
                       .format(vidx))
             else:
-                face_verts.append(bm_verts[vidx])
+                face_verts.append(new_mesh.vertices[vidx])
                 used_indices.append(vidx)
-        bm_face = bm.faces.new(face_verts)
+
+        new_mesh.polygons.add(1)
+
+        new_mesh.polygons[i].vertices.add(len(face_verts))
+        for j, v in enumerate(face_verts):
+            new_mesh.polygons[i].vertices[j].co = v
 
         # set UV if exists
-        if face.uv_coords is not None:
-            for j in range(face.ngons):
-                bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
-                bm_face.loops[j][uv_layer].uv[1] = \
-                    1 - bm_face.loops[j][uv_layer].uv[1]
-        bm_faces.append(bm_face)
+        # if face.uv_coords is not None:
+        #     for j in range(face.ngons):
+        #         bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
+        #         bm_face.loops[j][uv_layer].uv[1] = \
+        #             1 - bm_face.loops[j][uv_layer].uv[1]
+        # bm_faces.append(bm_face)
 
     # Before importing vertex weights, we need to fix the IDs of BMVert.
-    bm.to_mesh(new_mesh)
+    # bm.to_mesh(new_mesh)
 
     # Construct vertex groups to store vertex weights.
     if vertex_weighted_vertices:
@@ -221,7 +227,7 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
                 for v in vs:
                     vertex_weights_group.add([v.index], weight, 'REPLACE')
 
-    bm.free()
+    # bm.free()
 
     # object mode -> edit mode
     bpy.ops.object.editmode_toggle()
