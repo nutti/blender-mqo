@@ -5,7 +5,7 @@
 ## [Unreleased](https://github.com/nutti/blender-mqo/compare/v2.0.0...master)
 
 <!-- markdownlint-disable-next-line MD013 -->
-## [Version 2.0.0](https://github.com/nutti/blender-mqo/compare/v1.4.0...v2.0.0) - 2024.X.XX
+## [Version 2.0.0](https://github.com/nutti/blender-mqo/compare/v1.4.0...v2.0.0) - 2024.10.17
 
 ### Notice
 

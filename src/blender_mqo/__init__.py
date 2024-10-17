@@ -1,7 +1,7 @@
 bl_info = {
     "name": "MQO (Metasequoia) Format File Importer/Exporter",
     "author": "nutti, sapper-trle",
-    "version": (1, 5, 0),
+    "version": (2, 0, 0),
     "blender": (4, 2, 0),
     "location": "",
     "description": "Import/Export MQO format files",

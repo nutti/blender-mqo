@@ -26,7 +26,7 @@ def register_updater():
     config.branches = ["master"]
     ridx = config.current_addon_path.rfind(get_separator())
     config.addon_directory = config.current_addon_path[:ridx]
-    config.min_release_version = (1, 4, 0)
+    config.min_release_version = (2, 0, 0)
     config.default_target_addon_path = "blender_mqo"
     config.target_addon_path = {
         "master": "src{}blender_mqo".format(get_separator()),
