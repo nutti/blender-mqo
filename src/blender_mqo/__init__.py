@@ -1,10 +1,10 @@
 bl_info = {
-    "name": "MQO (Metasequoia) format",
+    "name": "MQO (Metasequoia) Format File Importer/Exporter",
     "author": "nutti, sapper-trle",
-    "version": (1, 4, 0),
-    "blender": (2, 80, 0),
+    "version": (1, 5, 0),
+    "blender": (4, 2, 0),
     "location": "",
-    "description": "Import/Export MQO files",
+    "description": "Import/Export MQO format files",
     "warning": "",
     "support": "COMMUNITY",
     "wiki_url": "",
@@ -26,26 +26,9 @@ else:
     from . import preferences
     from . import ops
 
-# pylint: disable=C0413
-import os
-
-
-def register_updater(info):
-    config = utils.addon_updater.AddonUpdatorConfig()
-    config.owner = "nutti"
-    config.repository = "blender-mqo"
-    config.current_addon_path = os.path.dirname(os.path.realpath(__file__))
-    config.branches = ["master", "develop"]
-    ridx = config.current_addon_path.rfind(utils.addon_updater.get_separator())
-    config.addon_directory = config.current_addon_path[:ridx]
-    config.min_release_version = info["version"]
-    config.target_addon_path = "src/blender_mqo"
-    updater = utils.addon_updater.AddonUpdatorManager.get_instance()
-    updater.init(config)
-
 
 def register():
-    register_updater(bl_info)
+    utils.addon_updater.register_updater()   # extensions.blender.org: Delete line  # noqa
     bpy.utils.register_class(ops.BLMQO_ObjectImportPropertyCollection)
     bpy.utils.register_class(ops.BLMQO_MaterialImportPropertyCollection)
     bpy.utils.register_class(ops.BLMQO_ObjectExportPropertyCollection)

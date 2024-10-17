@@ -19,6 +19,8 @@ def check_version(major, minor, _):
         return 0
     if bpy.app.version[0] > major:
         return 1
+    if bpy.app.version[0] < major:
+        return -1
     if bpy.app.version[1] > minor:
         return 1
     return -1
@@ -298,7 +300,12 @@ def operator_exists(idname):
         op_as_string(idname)
         return True
     except:     # noqa
-        return False
+        try:
+            from bpy.ops import _op_as_string   # pylint: disable=C0415
+            _op_as_string(idname)
+            return True
+        except:     # pylint: disable=W0702 # noqa
+            return False
 
 
 def menu_exists(idname):
@@ -314,6 +321,9 @@ class TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if check_version(4, 2, 0) >= 0:
+            cls.package_name = "bl_ext.user_default." + cls.package_name
+
         if cls.submodule_name is not None:
             print("\n======== Module Test: {}.{} ({}) ========"
                   .format(cls.package_name, cls.module_name,

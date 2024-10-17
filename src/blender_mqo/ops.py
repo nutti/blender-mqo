@@ -427,10 +427,18 @@ def export_material_v280(mqo_file, material):
         mqo_mtrl.specular = material_node.inputs["Specular"].default_value[0]
         mqo_mtrl.emissive =\
             material_node.inputs["Emissive Color"].default_value[0]
+    elif material_node.type == 'BSDF_PRINCIPLED':
+        mqo_mtrl.color = material_node.inputs["Base Color"].default_value
+        mqo_mtrl.specular =\
+            material_node.inputs["Specular Tint"].default_value[0]
+        mqo_mtrl.emissive =\
+            material_node.inputs["Emission Color"].default_value[0]
     elif material_node.type == 'TEX_IMAGE':
         mqo_mtrl.texture_map = bpy.path.basename(material_node.image.filepath)
         mqo_mtrl.projection_type = BLENDER_TO_MQO_PROJECTION_TYPE[
             material_node.projection]
+    else:
+        return
 
     mqo_file.add_material(mqo_mtrl)
 
@@ -729,7 +737,10 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         name="Group Name",
         default="Vertex Weights Group"
     )
-    add_import_prefix = BoolProperty(name="Add Import Prefix", default=True)
+    add_import_prefix = BoolProperty(
+        name="Add Import Prefix to Asset Names",
+        default=True
+    )
     import_prefix = StringProperty(name="Prefix", default="[Imported] ")
 
     prev_selected_file = ""
@@ -743,7 +754,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
         user_prefs = compat.get_user_preferences(context)
         if user_prefs is None:
             return
-        prefs = user_prefs.addons["blender_mqo"].preferences
+        prefs = user_prefs.addons[__package__].preferences
 
         if (prefs.selective_import
                 and self.prev_selected_file != self.properties.filepath):
@@ -836,8 +847,11 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
             layout.prop(self, "import_prefix")
 
     def execute(self, context):
+        if not self.properties.filepath:
+            raise ValueError("Filepath is not set")
+
         user_prefs = compat.get_user_preferences(context)
-        prefs = user_prefs.addons["blender_mqo"].preferences
+        prefs = user_prefs.addons[__package__].preferences
 
         if prefs.selective_import and not self.is_valid_mqo_file:
             self.report(
@@ -875,7 +889,7 @@ class BLMQO_OT_ImportMqo(bpy.types.Operator, ImportHelper):
     def invoke(self, context, _):
         wm = context.window_manager
         user_prefs = compat.get_user_preferences(context)
-        prefs = user_prefs.addons["blender_mqo"].preferences
+        prefs = user_prefs.addons[__package__].preferences
 
         self.objects_to_import.clear()
         self.materials_to_import.clear()
@@ -935,7 +949,7 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
     bl_options = {'REGISTER', 'UNDO'}
 
     filename_ext = ".mqo"
-    filter_glob = StringProperty(default="*.mqo")
+    filter_glob = StringProperty(default="*.mqo", options={'HIDDEN'})
 
     def get_objects_for_vertex_weights(self, context):
         # TODO: select only objects to export.
@@ -945,6 +959,16 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
                 continue
             items.append((obj.name, obj.name, obj.name))
         return items
+
+    export_mode = EnumProperty(
+        name="Export Mode",
+        description="Export Mode",
+        items=[
+            ('SELECTED_OBJECT', "Selected Objects", "Export selected objects"),
+            ('MANUAL', "Manual", "Export manually selected assets"),
+        ],
+        default='SELECTED_OBJECT',
+    )
 
     export_objects = BoolProperty(name="Export Objects", default=True)
     objects_to_export = bpy.props.CollectionProperty(
@@ -968,69 +992,101 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
         name="Object",
         items=get_objects_for_vertex_weights,
     )
-    add_export_prefix = BoolProperty(name="Add Export Prefix", default=True)
+    add_export_prefix = BoolProperty(
+        name="Add Export Prefix to Asset Names",
+        default=True
+    )
     export_prefix = StringProperty(name="Prefix", default="[Exported] ")
 
     def draw(self, _):
         layout = self.layout
 
-        object_to_vertex_groups = {}
-        for vg_idx in enumerate(self.vertex_weights_to_export):
-            vg = self.vertex_weights_to_export[vg_idx]
-            if vg.object_name not in object_to_vertex_groups:
-                object_to_vertex_groups[vg.object_name] = []
-            object_to_vertex_groups[vg.object_name].append(vg)
+        layout.prop(self, "export_mode")
 
-        layout.prop(self, "export_objects")
-        if self.export_objects and len(self.objects_to_export) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()     # Spacer.
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for oe in self.objects_to_export:
-                box.prop(oe, "export_", text=oe["object_name"])
+        if self.export_mode == 'SELECTED_OBJECT':
+            layout.prop(self, "export_materials")
+            layout.prop(self, "export_vertex_weights")
+        elif self.export_mode == 'MANUAL':
+            object_to_vertex_groups = {}
+            for vg_idx, _ in enumerate(self.vertex_weights_to_export):
+                vg = self.vertex_weights_to_export[vg_idx]
+                if vg.object_name not in object_to_vertex_groups:
+                    object_to_vertex_groups[vg.object_name] = []
+                object_to_vertex_groups[vg.object_name].append(vg)
 
-        layout.prop(self, "export_materials")
-        if self.export_materials and len(self.materials_to_export) > 0:
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()     # Spacer.
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()
-            box = col.box()
-            for me in self.materials_to_export:
-                box.prop(me, "export_", text=me["material_name"])
-
-        layout.prop(self, "export_vertex_weights")
-        if self.export_vertex_weights:
-            layout.prop(self, "objects_for_vertex_weights")
-            sp = compat.layout_split(layout, factor=0.01)
-            sp.column()
-            sp = compat.layout_split(sp, factor=1.0)
-            col = sp.column()   # Spacer.
-            for obj_name, vertex_groups in object_to_vertex_groups.items():
-                if obj_name != self.objects_for_vertex_weights:
-                    continue
+            layout.prop(self, "export_objects")
+            if self.export_objects and len(self.objects_to_export) > 0:
+                sp = compat.layout_split(layout, factor=0.01)
+                sp.column()     # Spacer.
+                sp = compat.layout_split(sp, factor=1.0)
+                col = sp.column()
                 box = col.box()
-                for group in vertex_groups:
-                    box.prop(group, "export_", text=group.vertex_group_name)
+                for oe in self.objects_to_export:
+                    box.prop(oe, "export_", text=oe["object_name"])
+
+            layout.prop(self, "export_materials")
+            if self.export_materials and len(self.materials_to_export) > 0:
+                sp = compat.layout_split(layout, factor=0.01)
+                sp.column()     # Spacer.
+                sp = compat.layout_split(sp, factor=1.0)
+                col = sp.column()
+                box = col.box()
+                for me in self.materials_to_export:
+                    box.prop(me, "export_", text=me["material_name"])
+
+            layout.prop(self, "export_vertex_weights")
+            if self.export_vertex_weights:
+                layout.prop(self, "objects_for_vertex_weights")
+                sp = compat.layout_split(layout, factor=0.01)
+                sp.column()
+                sp = compat.layout_split(sp, factor=1.0)
+                col = sp.column()   # Spacer.
+                for obj_name, vertex_groups in object_to_vertex_groups.items():
+                    if obj_name != self.objects_for_vertex_weights:
+                        continue
+                    box = col.box()
+                    for group in vertex_groups:
+                        box.prop(group, "export_",
+                                 text=group.vertex_group_name)
 
         layout.prop(self, "add_export_prefix")
         if self.add_export_prefix:
             layout.prop(self, "export_prefix")
 
     def execute(self, _):
-        exclude_objects = [
-            oe.object_name
-            for oe in self.objects_to_export
-            if not oe.export_
-        ]
-        exclude_materials = [
-            me.material_name
-            for me in self.materials_to_export
-            if not me.export_
-        ]
+        if not self.properties.filepath:
+            raise ValueError("Filepath is not set")
+
+        exclude_objects = set()
+        exclude_materials = set()
         vertex_groups = {}
+
+        if self.export_mode == 'SELECTED_OBJECT':
+            exclude_objects = {
+                o.name
+                for o in bpy.data.objects
+                if not compat.get_object_select(o)
+            }
+
+            used_materials = set()
+            for obj in bpy.data.objects:
+                if obj.name in exclude_objects:
+                    continue
+                for mtrl_slot in obj.material_slots:
+                    used_materials.add(mtrl_slot.material.name)
+            all_materials = {m.name for m in bpy.data.materials}
+            exclude_materials = all_materials - used_materials
+        elif self.export_mode == 'MANUAL':
+            exclude_objects = {
+                oe.object_name
+                for oe in self.objects_to_export
+                if not oe.export_
+            }
+            exclude_materials = {
+                me.material_name
+                for me in self.materials_to_export
+                if not me.export_
+            }
 
         for obj in bpy.data.objects:
             if obj.type != 'MESH':
@@ -1054,7 +1110,9 @@ class BLMQO_OT_ExportMqo(bpy.types.Operator, ExportHelper):
 
         return {'FINISHED'}
 
-    def invoke(self, context, _):
+    def invoke(self, context, event):
+        self.properties.filepath = "untitled.mqo"
+
         wm = context.window_manager
 
         self.objects_to_export.clear()
@@ -1090,13 +1148,11 @@ def topbar_mt_file_import_fn(self, _):
     layout = self.layout
 
     layout.operator(BLMQO_OT_ImportMqo.bl_idname,
-                    text="Metasequoia (.mqo)",
-                    icon='PLUGIN')
+                    text="Metasequoia (.mqo)")
 
 
 def topbar_mt_file_export_fn(self, _):
     layout = self.layout
 
     layout.operator(BLMQO_OT_ExportMqo.bl_idname,
-                    text="Metasequoia (.mqo)",
-                    icon='PLUGIN')
+                    text="Metasequoia (.mqo)")

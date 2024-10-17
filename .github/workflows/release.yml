@@ -28,10 +28,35 @@ jobs:
           mv src/blender_mqo.zip release-github-release
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: blender_mqo-github-release
           path: "release-github-release"
+
+  pack-extensions-blender-org:
+    name: Pack add-on's sources for extensions.blender.org
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Run scripts for the code removing
+        run: |
+          bash tools/remove_code_extensions.blender.org.sh src tmp
+
+      - name: Compress add-on's sources
+        run: |
+          mkdir release-extensions.blender.org
+          cd tmp/src
+          zip -r blender_mqo.zip blender_mqo
+          cd ../..
+          mv tmp/src/blender_mqo.zip release-extensions.blender.org
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: blender_mqo-extensions.blender.org
+          path: "release-extensions.blender.org"
 
   publish-github-release:
     name: Publish for GitHub Release

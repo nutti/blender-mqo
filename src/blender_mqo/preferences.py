@@ -6,11 +6,12 @@ from bpy.props import (
     EnumProperty,
 )
 
-from .utils.addon_updater import AddonUpdatorManager
+from .utils.addon_updater import AddonUpdaterManager    # extensions.blender.org: Delete line # pylint: disable=C0301 # noqa
 from .utils.bl_class_registry import BlClassRegistry
 from .utils import compatibility as compat
 
 
+# extensions.blender.org: Delete block start
 @BlClassRegistry()
 class BLMQO_OT_CheckAddonUpdate(bpy.types.Operator):
     bl_idname = "import_scene.blmqo_check_addon_update"
@@ -19,7 +20,7 @@ class BLMQO_OT_CheckAddonUpdate(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, _):
-        updater = AddonUpdatorManager.get_instance()
+        updater = AddonUpdaterManager.get_instance()
         updater.check_update_candidate()
 
         return {'FINISHED'}
@@ -40,31 +41,34 @@ class BLMQO_OT_UpdateAddon(bpy.types.Operator):
     )
 
     def execute(self, _):
-        updater = AddonUpdatorManager.get_instance()
+        updater = AddonUpdaterManager.get_instance()
         updater.update(self.branch_name)
 
         return {'FINISHED'}
 
 
 def get_update_candidate_branches(_, __):
-    updater = AddonUpdatorManager.get_instance()
+    updater = AddonUpdaterManager.get_instance()
     if not updater.candidate_checked():
         return []
 
     return [(name, name, "") for name in updater.get_candidate_branch_names()]
+# extensions.blender.org: Delete block end
 
 
 @BlClassRegistry()
 @compat.make_annotations
 class BLMQO_Preferences(bpy.types.AddonPreferences):
-    bl_idname = "blender_mqo"
+    bl_idname = __package__
 
+# extensions.blender.org: Delete block start
     # for add-on updater
     updater_branch_to_update = EnumProperty(
         name="branch",
         description="Target branch to update add-on",
         items=get_update_candidate_branches
     )
+# extensions.blender.org: Delete block end
 
     # for UI.
     category = EnumProperty(
@@ -72,7 +76,7 @@ class BLMQO_Preferences(bpy.types.AddonPreferences):
         description="Preferences Category",
         items=[
             ('CONFIG', "Configuration", "Configuration about this add-on"),
-            ('UPDATE', "Update", "Update this add-on"),
+            ('UPDATE', "Update", "Update this add-on"),     # extensions.blender.org: Delete line  # pylint: disable=C0301 # noqa
         ],
         default='CONFIG'
     )
@@ -113,8 +117,9 @@ class BLMQO_Preferences(bpy.types.AddonPreferences):
             col.prop(self, "importable_materials_limit")
             col.enabled = self.selective_import
 
+# extensions.blender.org: Delete block start
         elif self.category == 'UPDATE':
-            updater = AddonUpdatorManager.get_instance()
+            updater = AddonUpdaterManager.get_instance()
 
             layout.separator()
 
@@ -163,3 +168,4 @@ class BLMQO_Preferences(bpy.types.AddonPreferences):
                 elif updater.has_info():
                     box = layout.box()
                     box.label(text=updater.info(), icon='ERROR')
+# extensions.blender.org: Delete block end

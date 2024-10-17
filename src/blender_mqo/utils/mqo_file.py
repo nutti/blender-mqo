@@ -1672,7 +1672,7 @@ class MqoFile:
             if result:
                 face.material = int(result[0])
 
-            result = parse(line, rb"[0-9]+.* UV\(([0-9\. ]+)\)")
+            result = parse(line, rb"[0-9]+.* UV\(([-0-9\. ]+)\)")
             if result:
                 uvs = [float(c) for c in decode(result[0]).split(" ")]
                 face.uv_coords = [[u, v] for u, v in zip(uvs[::2], uvs[1::2])]

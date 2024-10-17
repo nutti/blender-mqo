@@ -35,23 +35,30 @@ jobs:
         run: pip3 install -r requirements.txt
 
       - name: Download Blender (2.7x)
-        run: |
-          wget http://mirror.cs.umn.edu/blender.org/release/Blender2.77/blender-2.77-linux-glibc211-x86_64.tar.bz2
-          tar jxf blender-2.77-linux-glibc211-x86_64.tar.bz2
+        run: bash tools/download_blender.sh 2.77 blender-bin
 
       - name: Copy add-on to Blender add-on's directory (2.7x)
-        run: cp -r src/blender_mqo blender-2.77-linux-glibc211-x86_64/2.77/scripts/addons
+        run: cp -r src/blender_mqo blender-bin/blender-v2.77-bin/2.77/scripts/addons
 
       - name: Run add-on unittest (2.7x)
-        run: blender-2.77-linux-glibc211-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+        run: blender-bin/blender-v2.77-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
 
       - name: Download Blender (2.8x)
-        run: |
-          wget https://download.blender.org/release/Blender2.80/blender-2.80-linux-glibc217-x86_64.tar.bz2
-          tar jxf blender-2.80-linux-glibc217-x86_64.tar.bz2
+        run: bash tools/download_blender.sh 2.80 blender-bin
 
       - name: Copy add-on to Blender add-on's directory (2.8x)
-        run: cp -r src/blender_mqo blender-2.80-linux-glibc217-x86_64/2.80/scripts/addons
+        run: cp -r src/blender_mqo blender-bin/blender-v2.80-bin/2.80/scripts/addons
 
       - name: Run add-on unittest (2.8x)
-        run: blender-2.80-linux-glibc217-x86_64/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+        run: blender-bin/blender-v2.80-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py
+
+      - name: Download Blender (4.2)
+        run: bash tools/download_blender.sh 4.2 blender-bin
+
+      - name: Copy add-on to Blender add-on's directory (4.2)
+        run: |
+          mkdir -p ~/.config/blender/4.2/extensions/user_default
+          cp -r src/blender_mqo ~/.config/blender/4.2/extensions/user_default
+
+      - name: Run add-on unittest (4.2)
+        run: blender-bin/blender-v4.2-bin/blender --factory-startup --background -noaudio --python tests/python/run_tests.py

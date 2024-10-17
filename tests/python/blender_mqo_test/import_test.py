@@ -2,7 +2,10 @@ import os
 
 import bpy
 
-from blender_mqo.utils.mqo_file import MqoFile
+try:
+    from blender_mqo.utils.mqo_file import MqoFile
+except:     # pylint: disable=W0702 # noqa
+    from bl_ext.user_default.blender_mqo.utils.mqo_file import MqoFile
 from . import common
 
 
