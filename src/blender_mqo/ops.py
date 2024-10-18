@@ -119,6 +119,244 @@ def import_materials(mqo_file, filepath, exclude_materials):
     return materials_imported
 
 
+def import_object_old(mqo_obj, materials, vertex_weight_import_options):
+    # construct object
+    new_mesh = bpy.data.meshes.new(mqo_obj.name)
+    new_obj = bpy.data.objects.new(mqo_obj.name, new_mesh)
+    new_obj.location = Vector(mqo_obj.translation)
+    new_obj.rotation_euler = Vector(mqo_obj.rotation)
+    new_obj.scale = Vector(mqo_obj.scale)
+    if compat.check_version(2, 80, 0) >= 0:
+        bpy.context.scene.collection.objects.link(new_obj)
+        bpy.context.view_layer.objects.active = new_obj
+        new_obj.select_set(True)
+    else:
+        bpy.context.scene.objects.link(new_obj)
+        bpy.context.scene.objects.active = new_obj
+        new_obj.select = True
+
+    # construct material
+    for mtrl in materials:
+        bpy.ops.object.material_slot_add()
+        if mtrl is not None:
+            new_obj.material_slots[len(new_obj.material_slots) - 1]\
+                .material = mtrl["material"]
+
+    # construct mesh
+    new_mesh = bpy.context.object.data
+    bm = bmesh.new()
+
+    bm_verts = [bm.verts.new(v) for v in mqo_obj.get_vertices()]
+    bm_faces = []
+    mqo_faces = mqo_obj.get_faces(uniq=True)
+
+    vertex_weights = mqo_obj.get_vertexattr('WEIT')
+    vertex_weighted_vertices = {}
+    if vertex_weight_import_options.import_ and vertex_weights is not None:
+        for vidx, weight in vertex_weights.items():
+            vertex_weighted_vertices[bm_verts[vidx]] = weight
+
+    # create UV map
+    has_uvmap = False
+    for face in mqo_faces:
+        if face.uv_coords is not None:
+            has_uvmap = True
+    uv_layer = None
+    if has_uvmap:
+        if bm.loops.layers.uv.items():
+            uv_layer = bm.loops.layers.uv[0]
+        else:
+            uv_layer = bm.loops.layers.uv.new()
+
+    for face in mqo_faces:
+        face_verts = []
+
+        # Create face.
+        used_indices = []
+        for j in range(face.ngons):
+            # Workaround for the multiple usage of BMVert in a face.
+            # Ex: (11, 12, 12) -> (v[11], v[12], new v)
+            vidx = face.vertex_indices[j]
+            if vidx in used_indices:
+                new_v = bm.verts.new(bm_verts[vidx].co)
+                face_verts.append(new_v)
+                if vertex_weights is not None and vidx in vertex_weights.keys():
+                    vertex_weighted_vertices[new_v] = vertex_weights[vidx]
+                print("Vertex {} is already used. Try to create new BMVert"
+                      .format(vidx))
+            else:
+                face_verts.append(bm_verts[vidx])
+                used_indices.append(vidx)
+        bm_face = bm.faces.new(face_verts)
+
+        # set UV if exists
+        if face.uv_coords is not None:
+            for j in range(face.ngons):
+                bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
+                bm_face.loops[j][uv_layer].uv[1] = \
+                    1 - bm_face.loops[j][uv_layer].uv[1]
+        bm_faces.append(bm_face)
+
+    # Before importing vertex weights, we need to fix the IDs of BMVert.
+    bm.to_mesh(new_mesh)
+
+    # Construct vertex groups to store vertex weights.
+    if vertex_weighted_vertices:
+        if vertex_weight_import_options.grouped_by == 'ALL_IN_ONE':
+            vertex_weights_group = new_obj.vertex_groups.new(
+                name=vertex_weight_import_options.group_name)
+            for v, weight in vertex_weighted_vertices.items():
+                vertex_weights_group.add([v.index], weight, 'REPLACE')
+        elif vertex_weight_import_options.grouped_by == 'WEIGHT_VALUE':
+            weight_to_vertices = {}
+            for v, weight in vertex_weighted_vertices.items():
+                if weight not in weight_to_vertices:
+                    weight_to_vertices[weight] = []
+                weight_to_vertices[weight].append(v)
+            for i, (weight, vs) in enumerate(weight_to_vertices.items()):
+                group_name = "{} {}".format(
+                    vertex_weight_import_options.group_name, i)
+                vertex_weights_group = new_obj.vertex_groups.new(
+                    name=group_name)
+                for v in vs:
+                    vertex_weights_group.add([v.index], weight, 'REPLACE')
+
+    bm.free()
+
+    # object mode -> edit mode
+    bpy.ops.object.editmode_toggle()
+
+    mtrl_map = {}
+    for i, face in enumerate(mqo_faces):
+        mtrl_idx = face.material
+        if mtrl_idx is None:
+            continue
+        if mtrl_idx not in mtrl_map:
+            mtrl_map[mtrl_idx] = []
+        mtrl_map[mtrl_idx].append(i)
+
+    for mtrl_idx, face_indices in mtrl_map.items():
+        bm = bmesh.from_edit_mesh(new_obj.data)
+        bm.faces.ensure_lookup_table()
+        # set material
+        for face in bm.faces:
+            face.select = False
+        for face_idx in face_indices:
+            bm.faces[face_idx].select = True
+            if has_uvmap and compat.check_version(2, 80, 0) < 0:
+                tex_layer = bm.faces.layers.tex.verify()
+                bm.faces[face_idx][tex_layer].image = \
+                    materials[mtrl_idx]["image"]
+        bmesh.update_edit_mesh(new_obj.data)
+        new_obj.active_material_index = mtrl_idx
+        # if material is not imported, this means to assign None
+        new_obj.active_material = materials[mtrl_idx]["material"]
+        bpy.ops.object.material_slot_assign()
+
+    bm = bmesh.from_edit_mesh(new_obj.data)
+    bm.faces.ensure_lookup_table()
+    for face in bm.faces:
+        face.select = False
+    bmesh.update_edit_mesh(new_obj.data)
+
+    # make vertices and faces for mirror connection
+    # pylint: disable=too-many-nested-blocks
+    if mqo_obj.mirror is not None:
+        if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] == 'CONNECT':
+            outermost_verts = get_outermost_verts(bm)
+
+            # make vertices aligned to axis
+            axis_aligned_verts = {}
+            for ov in outermost_verts:
+                new_vert = bm.verts.new(ov.co)
+                # TODO: Need to clarify the specification when more than two
+                #       axes are specified. For now, we applied about highest
+                #       prioritized axis. (X > Y > Z)
+                axis_index = mqo_obj.mirror_axis
+                if axis_index & 0x1:
+                    new_vert.co[0] = 0.0
+                elif axis_index & 0x2:
+                    new_vert.co[1] = 0.0
+                elif axis_index & 0x4:
+                    new_vert.co[2] = 0.0
+                axis_aligned_verts[ov] = new_vert
+
+            # make ordered outermost vertices
+            rest = outermost_verts
+            link_groups = []
+            while len(rest) != 0:
+                links = []
+                cur_vert = rest[0]
+                first_vert = rest[0]
+                is_vert_loop = False
+                has_no_link_edge = False
+                is_first_time = True
+                while True:
+                    rest.remove(cur_vert)
+                    # find adjacent vertices
+                    for e in cur_vert.link_edges:
+                        next_vert = e.other_vert(cur_vert)
+                        if next_vert in rest:
+                            links.append([cur_vert, next_vert])
+                            cur_vert = next_vert
+                            break
+                    else:  # not found, then check if this is a vertex loop
+                        for e in cur_vert.link_edges:
+                            next_vert = e.other_vert(cur_vert)
+                            if next_vert == first_vert and not is_first_time:
+                                is_vert_loop = True
+                                links.append([cur_vert, first_vert])
+                                break
+                        else:  # vertex has no linked edge
+                            has_no_link_edge = True
+                    is_first_time = False
+                    if len(rest) == 0 or is_vert_loop or has_no_link_edge:
+                        break
+                link_groups.append(links)
+
+            # make faces
+            for lo in link_groups:
+                for li in lo:
+                    face_verts = [
+                        li[0], li[1],
+                        axis_aligned_verts[li[1]], axis_aligned_verts[li[0]],
+                    ]
+                    bm.faces.new(face_verts)
+
+    bmesh.update_edit_mesh(new_obj.data)
+
+    # edit mode -> object mode
+    bpy.ops.object.editmode_toggle()
+
+    # add mirror modifier
+    if mqo_obj.mirror is not None:
+        if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] != 'NONE':
+            bpy.ops.object.modifier_add(type='MIRROR')
+            axis_index = mqo_obj.mirror_axis
+            if compat.check_version(2, 80, 0) >= 0:
+                for i in new_obj.modifiers["Mirror"].use_axis:
+                    new_obj.modifiers["Mirror"].use_axis[i] = False
+                if axis_index & 0x1:
+                    new_obj.modifiers["Mirror"].use_axis[0] = True
+                if axis_index & 0x2:
+                    new_obj.modifiers["Mirror"].use_axis[1] = True
+                if axis_index & 0x4:
+                    new_obj.modifiers["Mirror"].use_axis[2] = True
+            else:
+                new_obj.modifiers["Mirror"].use_x = False
+                new_obj.modifiers["Mirror"].use_y = False
+                new_obj.modifiers["Mirror"].use_z = False
+                if axis_index & 0x1:
+                    new_obj.modifiers["Mirror"].use_x = True
+                if axis_index & 0x2:
+                    new_obj.modifiers["Mirror"].use_y = True
+                if axis_index & 0x4:
+                    new_obj.modifiers["Mirror"].use_z = True
+    new_obj.delta_rotation_euler = (math.radians(90), 0, 0)
+    new_obj.delta_scale = (0.01, 0.01, 0.01)
+    return new_obj
+
+
 def import_object(mqo_obj, materials, vertex_weight_import_options):
     # construct object
     new_mesh = bpy.data.meshes.new(mqo_obj.name)
@@ -145,10 +383,15 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
     # construct mesh
     new_mesh = bpy.context.object.data
 
-    new_mesh.vertices.add(len(mqo_obj.get_vertices()))
-    for i, v in enumerate(mqo_obj.get_vertices()):
-        new_mesh.vertices[i].co = v
+    # new_mesh.vertices.add(len(mqo_obj.get_vertices()))
+    # for i, v in enumerate(mqo_obj.get_vertices()):
+    #     new_mesh.vertices[i].co = v
+    mqo_verts = mqo_obj.get_vertices()
     mqo_faces = mqo_obj.get_faces(uniq=True)
+    face_indices = [f.vertex_indices for f in mqo_faces]
+
+    new_mesh.from_pydata(mqo_verts, [], face_indices)
+    new_mesh.update(calc_edges=True)
 
     vertex_weights = mqo_obj.get_vertexattr('WEIT')
     vertex_weighted_vertices = {}
@@ -162,49 +405,24 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
         if face.uv_coords is not None:
             has_uvmap = True
     uv_layer = None
-    # if has_uvmap:
-    #     if bm.loops.layers.uv.items():
-    #         uv_layer = bm.loops.layers.uv[0]
-    #     else:
-    #         uv_layer = bm.loops.layers.uv.new()
+    if has_uvmap:
+        if new_mesh.uv_layers.items():
+            uv_layer = new_mesh.uv_layers[0]
+        else:
+            uv_layer = new_mesh.uv_layers.new()
 
+    # set UV if exists
     for i, face in enumerate(mqo_faces):
-        face_verts = []
+        if face.uv_coords is not None:
+            for j in range(face.ngons):
 
-        # Create face.
-        used_indices = []
-        for j in range(face.ngons):
-            # Workaround for the multiple usage of BMVert in a face.
-            # Ex: (11, 12, 12) -> (v[11], v[12], new v)
-            vidx = face.vertex_indices[j]
-            if vidx in used_indices:
-                new_v = new_mesh.vertices.add(1)
-                new_v.co = new_mesh.vertices[vidx].co
-                face_verts.append(new_v)
-                if vidx in vertex_weights.keys():
-                    vertex_weighted_vertices[new_v] = vertex_weights[vidx]
-                print("Vertex {} is already used. Try to create new BMVert"
-                      .format(vidx))
-            else:
-                face_verts.append(new_mesh.vertices[vidx])
-                used_indices.append(vidx)
+                # @@@@ uv_layer.data[0].uv
+                bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
+                bm_face.loops[j][uv_layer].uv[1] = \
+                    1 - bm_face.loops[j][uv_layer].uv[1]
+        bm_faces.append(bm_face)
 
-        new_mesh.polygons.add(1)
-
-        new_mesh.polygons[i].vertices.add(len(face_verts))
-        for j, v in enumerate(face_verts):
-            new_mesh.polygons[i].vertices[j].co = v
-
-        # set UV if exists
-        # if face.uv_coords is not None:
-        #     for j in range(face.ngons):
-        #         bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
-        #         bm_face.loops[j][uv_layer].uv[1] = \
-        #             1 - bm_face.loops[j][uv_layer].uv[1]
-        # bm_faces.append(bm_face)
-
-    # Before importing vertex weights, we need to fix the IDs of BMVert.
-    # bm.to_mesh(new_mesh)
+    return new_obj
 
     # Construct vertex groups to store vertex weights.
     if vertex_weighted_vertices:
