@@ -382,10 +382,6 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
 
     # construct mesh
     new_mesh = bpy.context.object.data
-
-    # new_mesh.vertices.add(len(mqo_obj.get_vertices()))
-    # for i, v in enumerate(mqo_obj.get_vertices()):
-    #     new_mesh.vertices[i].co = v
     mqo_verts = mqo_obj.get_vertices()
     mqo_faces = mqo_obj.get_faces(uniq=True)
     face_indices = [f.vertex_indices for f in mqo_faces]
@@ -412,17 +408,14 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
             uv_layer = new_mesh.uv_layers.new()
 
     # set UV if exists
-    for i, face in enumerate(mqo_faces):
+    uv_data_idx = 0
+    for face in mqo_faces:
         if face.uv_coords is not None:
-            for j in range(face.ngons):
-
-                # @@@@ uv_layer.data[0].uv
-                bm_face.loops[j][uv_layer].uv = face.uv_coords[j]
-                bm_face.loops[j][uv_layer].uv[1] = \
-                    1 - bm_face.loops[j][uv_layer].uv[1]
-        bm_faces.append(bm_face)
-
-    return new_obj
+            for i in range(face.ngons):
+                uv_layer.data[uv_data_idx].uv = face.uv_coords[i]
+                uv_layer.data[uv_data_idx].uv[1] = \
+                    1 - uv_layer.data[uv_data_idx].uv[1]
+                uv_data_idx += 1
 
     # Construct vertex groups to store vertex weights.
     if vertex_weighted_vertices:
@@ -445,8 +438,6 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
                 for v in vs:
                     vertex_weights_group.add([v.index], weight, 'REPLACE')
 
-    # bm.free()
-
     # object mode -> edit mode
     bpy.ops.object.editmode_toggle()
 
@@ -460,28 +451,22 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
         mtrl_map[mtrl_idx].append(i)
 
     for mtrl_idx, face_indices in mtrl_map.items():
-        bm = bmesh.from_edit_mesh(new_obj.data)
-        bm.faces.ensure_lookup_table()
         # set material
-        for face in bm.faces:
-            face.select = False
+        bpy.ops.mesh.select_all(action='DESELECT')
         for face_idx in face_indices:
-            bm.faces[face_idx].select = True
+            new_mesh.polygons[face_idx].select = True
             if has_uvmap and compat.check_version(2, 80, 0) < 0:
-                tex_layer = bm.faces.layers.tex.verify()
-                bm.faces[face_idx][tex_layer].image = \
-                    materials[mtrl_idx]["image"]
-        bmesh.update_edit_mesh(new_obj.data)
+                if new_mesh.uv_textures.items():
+                    tex_layer = new_mesh.uv_textures[0]
+                else:
+                    tex_layer = new_mesh.uv_textures.new()
+                tex_layer.data[face_idx].iamge = materials[mtrl_idx]["image"]
         new_obj.active_material_index = mtrl_idx
         # if material is not imported, this means to assign None
         new_obj.active_material = materials[mtrl_idx]["material"]
         bpy.ops.object.material_slot_assign()
 
-    bm = bmesh.from_edit_mesh(new_obj.data)
-    bm.faces.ensure_lookup_table()
-    for face in bm.faces:
-        face.select = False
-    bmesh.update_edit_mesh(new_obj.data)
+    bpy.ops.mesh.select_all(action='DESELECT')
 
     # make vertices and faces for mirror connection
     # pylint: disable=too-many-nested-blocks
@@ -546,6 +531,8 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
                         axis_aligned_verts[li[1]], axis_aligned_verts[li[0]],
                     ]
                     bm.faces.new(face_verts)
+
+    return new_obj
 
     bmesh.update_edit_mesh(new_obj.data)
 
