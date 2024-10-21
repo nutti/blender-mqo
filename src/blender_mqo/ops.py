@@ -22,8 +22,39 @@ BLENDER_TO_MQO_PROJECTION_TYPE = {'BOX': 0, 'FLAT': 1, 'TUBE': 2, 'SPHERE': 3}
 MQO_TO_BLENDER_MIRROR_TYPE = {0: 'NONE', 1: 'SEPARATE', 2: 'CONNECT'}
 
 
-def get_outermost_verts(bm):
+def get_outermost_verts_old(bm):
     return [v for v in bm.verts if len(v.link_faces) != len(v.link_edges)]
+
+
+def get_outermost_verts(mesh, linked_face_indices, linked_edge_indices):
+    print([v.index for v in mesh.vertices])
+    return [v for v in mesh.vertices
+            if len(linked_face_indices[v.index]) != len(linked_edge_indices[v.index])]
+
+
+def get_linked_face_indices(mesh):
+    linked_face_indices = {v.index: [] for v in mesh.vertices}
+    for face in mesh.polygons:
+        for vidx in face.vertices:
+            linked_face_indices[vidx].append(face.index)
+    return linked_face_indices
+
+
+def get_linked_edge_indices(mesh):
+    linked_edge_indices = {v.index: [] for v in mesh.vertices}
+    for edge in mesh.edges:
+        for vidx in edge.vertices:
+            linked_edge_indices[vidx].append(edge.index)
+    return linked_edge_indices
+
+
+def get_other_vert(mesh, edge, vert):
+    other_vert_idx = None
+    for vidx in edge.vertices:
+        if vidx != vert.index:
+            other_vert_idx = vidx
+            return mesh.vertices[other_vert_idx]
+    return None
 
 
 def import_material_v279(mqo_mtrl, filepath):
@@ -263,7 +294,7 @@ def import_object_old(mqo_obj, materials, vertex_weight_import_options):
     # pylint: disable=too-many-nested-blocks
     if mqo_obj.mirror is not None:
         if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] == 'CONNECT':
-            outermost_verts = get_outermost_verts(bm)
+            outermost_verts = get_outermost_verts_old(bm)
 
             # make vertices aligned to axis
             axis_aligned_verts = {}
@@ -395,6 +426,82 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
         for vidx, weight in vertex_weights.items():
             vertex_weighted_vertices[new_mesh.vertices[vidx]] = weight
 
+    # make vertices and faces for mirror connection
+    # pylint: disable=too-many-nested-blocks
+    if mqo_obj.mirror is not None:
+        if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] == 'CONNECT':
+            linked_face_indices = get_linked_face_indices(new_mesh)
+            linked_edge_indices = get_linked_edge_indices(new_mesh)
+            outermost_verts = get_outermost_verts(
+                new_mesh, linked_face_indices, linked_edge_indices)
+            outermost_vert_indices = [v.index for v in outermost_verts]
+
+            new_verts_co = [list(v.co) for v in new_mesh.vertices]
+            new_faces_indices = [list(f.vertices) for f in new_mesh.polygons]
+
+            # make vertices aligned to axis
+            axis_aligned_verts = {}
+            for i, ovidx in enumerate(outermost_vert_indices):
+                new_vert_co = list(new_mesh.vertices[ovidx].co)
+                axis_index = mqo_obj.mirror_axis
+                # TODO: Need to clarify the specification when more than two
+                #       axes are specified. For now, we applied about highest
+                #       prioritized axis. (X > Y > Z)
+                if axis_index & 0x1:
+                    new_vert_co[0] = 0.0
+                elif axis_index & 0x2:
+                    new_vert_co[1] = 0.0
+                elif axis_index & 0x4:
+                    new_vert_co[2] = 0.0
+                axis_aligned_verts[ovidx] = len(new_verts_co)
+                new_verts_co.append(new_vert_co)
+
+            # make ordered outermost vertices
+            rest = outermost_vert_indices
+            link_groups = []
+            while len(rest) != 0:
+                links = []
+                cur_vert_idx = rest[0]
+                first_vert_idx = rest[0]
+                is_vert_loop = False
+                has_no_link_edge = False
+                is_first_time = True
+                while True:
+                    rest.remove(cur_vert_idx)
+                    # find adjacent vertices
+                    for eidx in linked_edge_indices[cur_vert_idx]:
+                        next_vert = get_other_vert(new_mesh, new_mesh.edges[eidx], new_mesh.vertices[cur_vert_idx])
+                        if next_vert.index in rest:
+                            links.append([cur_vert_idx, next_vert.index])
+                            cur_vert_idx = next_vert.index
+                            break
+                    else:  # not found, then check if this is a vertex loop
+                        for eidx in linked_edge_indices[cur_vert_idx]:
+                            next_vert = get_other_vert(new_mesh, new_mesh.edges[eidx], new_mesh.vertices[cur_vert_idx])
+                            if next_vert.index == first_vert_idx and not is_first_time:
+                                is_vert_loop = True
+                                links.append([cur_vert_idx, first_vert_idx])
+                                break
+                        else:  # vertex has no linked edge
+                            has_no_link_edge = True
+                    is_first_time = False
+                    if len(rest) == 0 or is_vert_loop or has_no_link_edge:
+                        break
+                link_groups.append(links)
+
+            # make faces
+            for lo in link_groups:
+                for li in lo:
+                    new_faces_indices.append([
+                        li[0], li[1],
+                        axis_aligned_verts[li[1]],
+                        axis_aligned_verts[li[0]],
+                    ])
+
+            new_mesh.clear_geometry()
+            new_mesh.from_pydata(new_verts_co, [], new_faces_indices)
+            new_mesh.update(calc_edges=True)
+
     # create UV map
     has_uvmap = False
     for face in mqo_faces:
@@ -468,74 +575,6 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
 
     bpy.ops.mesh.select_all(action='DESELECT')
 
-    # make vertices and faces for mirror connection
-    # pylint: disable=too-many-nested-blocks
-    if mqo_obj.mirror is not None:
-        if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] == 'CONNECT':
-            outermost_verts = get_outermost_verts(bm)
-
-            # make vertices aligned to axis
-            axis_aligned_verts = {}
-            for ov in outermost_verts:
-                new_vert = bm.verts.new(ov.co)
-                # TODO: Need to clarify the specification when more than two
-                #       axes are specified. For now, we applied about highest
-                #       prioritized axis. (X > Y > Z)
-                axis_index = mqo_obj.mirror_axis
-                if axis_index & 0x1:
-                    new_vert.co[0] = 0.0
-                elif axis_index & 0x2:
-                    new_vert.co[1] = 0.0
-                elif axis_index & 0x4:
-                    new_vert.co[2] = 0.0
-                axis_aligned_verts[ov] = new_vert
-
-            # make ordered outermost vertices
-            rest = outermost_verts
-            link_groups = []
-            while len(rest) != 0:
-                links = []
-                cur_vert = rest[0]
-                first_vert = rest[0]
-                is_vert_loop = False
-                has_no_link_edge = False
-                is_first_time = True
-                while True:
-                    rest.remove(cur_vert)
-                    # find adjacent vertices
-                    for e in cur_vert.link_edges:
-                        next_vert = e.other_vert(cur_vert)
-                        if next_vert in rest:
-                            links.append([cur_vert, next_vert])
-                            cur_vert = next_vert
-                            break
-                    else:  # not found, then check if this is a vertex loop
-                        for e in cur_vert.link_edges:
-                            next_vert = e.other_vert(cur_vert)
-                            if next_vert == first_vert and not is_first_time:
-                                is_vert_loop = True
-                                links.append([cur_vert, first_vert])
-                                break
-                        else:  # vertex has no linked edge
-                            has_no_link_edge = True
-                    is_first_time = False
-                    if len(rest) == 0 or is_vert_loop or has_no_link_edge:
-                        break
-                link_groups.append(links)
-
-            # make faces
-            for lo in link_groups:
-                for li in lo:
-                    face_verts = [
-                        li[0], li[1],
-                        axis_aligned_verts[li[1]], axis_aligned_verts[li[0]],
-                    ]
-                    bm.faces.new(face_verts)
-
-    return new_obj
-
-    bmesh.update_edit_mesh(new_obj.data)
-
     # edit mode -> object mode
     bpy.ops.object.editmode_toggle()
 
@@ -563,8 +602,10 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
                     new_obj.modifiers["Mirror"].use_y = True
                 if axis_index & 0x4:
                     new_obj.modifiers["Mirror"].use_z = True
+
     new_obj.delta_rotation_euler = (math.radians(90), 0, 0)
     new_obj.delta_scale = (0.01, 0.01, 0.01)
+
     return new_obj
 
 
