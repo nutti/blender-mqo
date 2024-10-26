@@ -117,6 +117,25 @@ class TestImportMqo(common.TestBase):
 
         self._valid_object(mqo_file, "obj1", 8, 6)
 
+    def test_import_mqo_single_object_with_dup_vertices(self):
+        filepath = "{}/{}/single_object_with_dup_vertices.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 0,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 6)
+
     def test_import_mqo_single_object_with_bvertex(self):
         filepath = "{}/{}/single_object_with_bvertex.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)

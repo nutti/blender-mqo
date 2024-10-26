@@ -154,6 +154,10 @@ def valid_material_assignment(bl_obj, mqo_obj, bl_mtrl, mqo_mtrl_index):
     for face in bm.faces:
         face.select = False
     bpy.ops.object.material_slot_select()
+    selected_faces = []
+    for face in bm.faces:
+        if face.select:
+            selected_faces.append(face.index)
     for bl_face, mqo_face in zip(bm.faces, mqo_obj.get_faces(uniq=True)):
         if not is_same_face(mqo_obj, bl_face, mqo_face):
             return False
