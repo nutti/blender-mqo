@@ -33,7 +33,7 @@ class TestImportMqo(common.TestBase):
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
 
-    def test_import_mqo_only_scene(self):
+    def test_import_mqo_scene(self):
         filepath = "{}/{}/scene.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
@@ -45,7 +45,7 @@ class TestImportMqo(common.TestBase):
                          "Number of imported materials")
         self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
 
-    def test_import_mqo_with_thumnail(self):
+    def test_import_mqo_thumnail(self):
         filepath = "{}/{}/thumbnail.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
@@ -60,11 +60,18 @@ class TestImportMqo(common.TestBase):
     def _valid_object(self, mqo_file, obj_name, expect_num_vert,
                       expect_num_face):
         common.select_object_only(obj_name)
+
         bl_obj = bpy.data.objects[obj_name]
         if common.check_version(2, 80, 0) >= 0:
             bpy.context.view_layer.objects.active = bl_obj
         else:
             bpy.context.scene.objects.active = bl_obj
+
+        # Flipping normal is required to match between Blender and Metasequioa.
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.flip_normals()
+        bpy.ops.object.mode_set(mode='OBJECT')
+
         self.assertEqual(
             common.get_num_vertices(bl_obj), expect_num_vert,
             "Number of imported {}'s vertices".format(obj_name))
@@ -96,7 +103,13 @@ class TestImportMqo(common.TestBase):
     def _valid_mirror(self, mqo_file, obj_name):
         bl_obj = bpy.data.objects[obj_name]
         mqo_obj = [o for o in mqo_file.get_objects() if o.name == obj_name][0]
-        common.valid_mirror_modifier(bl_obj.modifiers["Mirror"], mqo_obj)
+        self.assertTrue(
+            common.valid_mirror_modifier(bl_obj.modifiers["Mirror"], mqo_obj))
+
+    def _valid_normals(self, mqo_file, obj_name):
+        bl_obj = bpy.data.objects[obj_name]
+        mqo_obj = [o for o in mqo_file.get_objects() if o.name == obj_name][0]
+        self.assertTrue(common.valid_normals(bl_obj, mqo_obj))
 
     def test_import_mqo_single_object(self):
         filepath = "{}/{}/single_object.mqo".format(
@@ -194,10 +207,10 @@ class TestImportMqo(common.TestBase):
         self._valid_object(mqo_file, "obj1", 8, 6)
         self._valid_object(mqo_file, "obj2", 42, 60)
 
-    def test_import_mqo_object_with_single_material(self):
+    def test_import_mqo_single_material(self):
         # TODO: because blender crash at bpy.ops.object.material_slot_assign(),
         #       we can not test in Blender 2.8
-        if common.check_version(2, 80, 0) >= 0:
+        if common.check_version(2, 80, 0) == 0:
             return
 
         filepath = "{}/{}/single_material.mqo".format(
@@ -219,10 +232,10 @@ class TestImportMqo(common.TestBase):
         self._valid_object(mqo_file, "obj1", 8, 6)
         self._valid_material(mqo_file, "obj1", "mat1")
 
-    def test_import_mqo_object_with_single_materialex2(self):
+    def test_import_mqo_single_material_with_materialex2(self):
         # TODO: because blender crash at bpy.ops.object.material_slot_assign(),
         #       we can not test in Blender 2.8
-        if common.check_version(2, 80, 0) >= 0:
+        if common.check_version(2, 80, 0) == 0:
             return
 
         filepath = "{}/{}/single_material_with_materialex2.mqo".format(
@@ -244,10 +257,10 @@ class TestImportMqo(common.TestBase):
         self._valid_object(mqo_file, "obj1", 8, 6)
         self._valid_material(mqo_file, "obj1", "mat1")
 
-    def test_import_mqo_object_with_multiple_materials(self):
+    def test_import_mqo_multiple_materials(self):
         # TODO: because blender crash at bpy.ops.object.material_slot_assign(),
         #       we can not test in Blender 2.8
-        if common.check_version(2, 80, 0) >= 0:
+        if common.check_version(2, 80, 0) == 0:
             return
 
         filepath = "{}/{}/multiple_materials.mqo".format(
@@ -270,10 +283,10 @@ class TestImportMqo(common.TestBase):
         self._valid_material(mqo_file, "obj1", "mat1")
         self._valid_material(mqo_file, "obj1", "mat2")
 
-    def test_import_mqo_object_with_texture(self):
+    def test_import_mqo_texture(self):
         # TODO: because blender crash at bpy.ops.object.material_slot_assign(),
         #       we can not test in Blender 2.8
-        if common.check_version(2, 80, 0) >= 0:
+        if common.check_version(2, 80, 0) == 0:
             return
 
         filepath = "{}/{}/texture.mqo".format(
@@ -296,7 +309,7 @@ class TestImportMqo(common.TestBase):
         self._valid_material(mqo_file, "obj1", "mat1")
         self._valid_uvs(mqo_file, "obj1")
 
-    def test_import_mqo_object_with_mirrored(self):
+    def test_import_mqo_mirrored(self):
         filepath = "{}/{}/mirrored.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
@@ -316,7 +329,7 @@ class TestImportMqo(common.TestBase):
         self._valid_object(mqo_file, "obj1", 8, 5)
         self._valid_mirror(mqo_file, "obj1")
 
-    def test_import_mqo_object_with_mirrored_multiple_axes(self):
+    def test_import_mqo_mirrored_multiple_axes(self):
         filepath = "{}/{}/mirrored_multiple_axes.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
@@ -336,7 +349,7 @@ class TestImportMqo(common.TestBase):
         self._valid_object(mqo_file, "obj1", 8, 5)
         self._valid_mirror(mqo_file, "obj1")
 
-    def test_import_mqo_object_with_vertexattr(self):
+    def test_import_mqo_vertexattr(self):
         filepath = "{}/{}/vertexattr.mqo".format(
             os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
         bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
@@ -354,6 +367,32 @@ class TestImportMqo(common.TestBase):
         mqo_file.load(filepath)
 
         self._valid_object(mqo_file, "obj1", 8, 6)
+
+    def test_import_mqo_normal(self):
+        # TODO: because blender crash at bpy.ops.object.material_slot_assign(),
+        #       we can not test in Blender 2.8
+        if common.check_version(2, 80, 0) == 0:
+            return
+
+        filepath = "{}/{}/normal.mqo".format(
+            os.path.dirname(os.path.abspath(__file__)), MQO_FILE_DIR)
+        bpy.ops.import_scene.blmqo_ot_import_mqo('EXEC_DEFAULT',
+                                                 filepath=filepath,
+                                                 add_import_prefix=False,
+                                                 import_prefix="")
+
+        self.assertEqual(len(bpy.data.objects), 1,
+                         "Number of imported objects")
+        self.assertEqual(len(bpy.data.materials), 1,
+                         "Number of imported materials")
+        self.assertEqual(len(bpy.data.images), 0, "Number of imported images")
+
+        mqo_file = MqoFile()
+        mqo_file.load(filepath)
+
+        self._valid_object(mqo_file, "obj1", 8, 6)
+        self._valid_material(mqo_file, "obj1", "mat1")
+        self._valid_normals(mqo_file, "obj1")
 
     def test_import_mqoz(self):
         filepath = "{}/{}/single_object.mqoz".format(

@@ -256,6 +256,26 @@ def valid_vertexattr(bl_obj, mqo_obj):
     return True
 
 
+@memorize_view_3d_mode
+def valid_normals(bl_obj, mqo_obj):
+    if bpy.ops.object.mode_set.poll():
+        bpy.ops.object.mode_set(mode='EDIT')
+
+    bm = bmesh.from_edit_mesh(bl_obj.data)
+    for bl_face, mqo_face in zip(bm.faces, mqo_obj.get_faces(uniq=True)):
+        if not is_same_face(mqo_obj, bl_face, mqo_face):
+            return False
+
+        # Minus is required to match between Blender and Metasequoia.
+        bl_n = list(-bl_face.normal)
+        mqo_n = mqo_face.normals[0]
+        if not is_same(bl_n, mqo_n):
+            print("Normal does not match {} vs {}".format(bl_n, mqo_n))
+            return False
+
+    return True
+
+
 def select_object_only(obj_name):
     for o in bpy.data.objects:
         if o.name == obj_name:

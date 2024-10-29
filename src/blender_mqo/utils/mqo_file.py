@@ -635,6 +635,7 @@ class Face:
         self._vertex_indices = None
         self._material = None
         self._uv_coords = None
+        self._normals = None
         self._colors = None
         self._crs = None
 
@@ -679,6 +680,16 @@ class Face:
         self._uv_coords = uv_coords_
 
     @property
+    def normals(self):
+        if self._normals is None:
+            return None
+        return self._normals
+
+    @normals.setter
+    def normals(self, normals_):
+        self._normals = normals_
+
+    @property
     def colors(self):
         if self._colors is None:
             return None
@@ -698,7 +709,9 @@ class Face:
     def crs(self, crs_):
         self._crs = crs_
 
-    def is_same(self, other, allowable_error=ALLOWABLE_ERROR):
+    # pylint: disable=W0102
+    def is_same(self, other, allowable_error=ALLOWABLE_ERROR,
+                ignore_keys=set()):
         self_keys = list(self.__dict__.keys())
         other_keys = list(other.__dict__.keys())
 
@@ -706,6 +719,8 @@ class Face:
             return False
 
         for key in self_keys:
+            if key in ignore_keys:
+                continue
             if key not in other_keys:
                 return False
             if not is_same(self.__dict__[key], other.__dict__[key],
@@ -728,6 +743,11 @@ class Face:
                 coords = [x for uv in self._uv_coords for x in uv]
                 coords_str = ["{:.5f}".format(c) for c in coords]
                 s += " UV({})".format(" ".join(coords_str))
+            if self._normals is not None:
+                normals = [x for normal in self._normals for x in normal]
+                normals_str = ["{:.6f}".format(n) for n in normals]
+                s += " N({}{})".format("2 " * len(self._normals),
+                                       " ".join(normals_str))
             if self._colors is not None:
                 colors = ["{}".format(c) for c in self._colors]
                 s += " COL({})".format(" ".join(colors))
@@ -1681,6 +1701,20 @@ class MqoFile:
                                        "(expects {}, but {}"
                                        .format(face.ngons,
                                                len(face.uv_coords)))
+
+            result = parse(line, rb"[0-9]+.* N\(([-0-9\. ]+)\)")
+            if result:
+                normals_str_raw = list(decode(result[0]).split(" "))
+                _ = normals_str_raw[:len(normals_str_raw) // 4]
+                normals = normals_str_raw[len(normals_str_raw) // 4:]
+                face.normals = [[float(x), float(y), float(z)]
+                                for x, y, z in zip(normals[::3], normals[1::3],
+                                                   normals[2::3])]
+                if face.ngons != len(face.normals):
+                    raise RuntimeError("Number of Normals does not match "
+                                       "(expects {}, but {}"
+                                       .format(face.ngons,
+                                               len(face.normals)))
 
             result = parse(line, rb"[0-9]+.* COL\(([0-9 ]+)\)")
             if result:

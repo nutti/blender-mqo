@@ -149,6 +149,10 @@ def import_materials(mqo_file, filepath, exclude_materials):
 
 
 def import_object(mqo_obj, materials, vertex_weight_import_options):
+    if bpy.ops.object.mode_set.poll():
+        bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='DESELECT')
+
     # construct object
     new_mesh = bpy.data.meshes.new(mqo_obj.name)
     new_obj = bpy.data.objects.new(mqo_obj.name, new_mesh)
@@ -175,7 +179,13 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
     new_mesh = bpy.context.object.data
     mqo_verts = mqo_obj.get_vertices()
     mqo_faces = mqo_obj.get_faces(uniq=True)
-    face_indices = [f.vertex_indices for f in mqo_faces]
+    face_indices = []
+    for f in mqo_faces:
+        vidxs = []
+        for vidx in f.vertex_indices:
+            if vidx not in vidxs:
+                vidxs.append(vidx)
+        face_indices.append(vidxs)
 
     new_mesh.from_pydata(mqo_verts, [], face_indices)
     new_mesh.update(calc_edges=True)
@@ -257,16 +267,17 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
             # make faces
             for lo in link_groups:
                 for li in lo:
-                    new_faces_indices.append([
+                    indices = [
                         li[0], li[1],
                         axis_aligned_verts[li[1]],
                         axis_aligned_verts[li[0]],
-                    ])
+                    ]
+                    new_faces_indices.append(indices)
 
             if compat.check_version(2, 81, 0) < 0:
-                bpy.ops.object.editmode_toggle()
+                bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.delete(type='VERT')
-                bpy.ops.object.editmode_toggle()
+                bpy.ops.object.mode_set(mode='OBJECT')
             else:
                 new_mesh.clear_geometry()
             new_mesh.from_pydata(new_verts_co, [], new_faces_indices)
@@ -341,14 +352,14 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
         for face_idx in face_indices:
             new_mesh.polygons[face_idx].select = True
 
-        bpy.ops.object.editmode_toggle()    # object mode -> edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
 
         new_obj.active_material_index = mtrl_idx
         # if material is not imported, this means to assign None
         new_obj.active_material = materials[mtrl_idx]["material"]
         bpy.ops.object.material_slot_assign()
 
-        bpy.ops.object.editmode_toggle()    # edit mode -> object mode
+        bpy.ops.object.mode_set(mode='OBJECT')
 
     bpy.context.tool_settings.mesh_select_mode = mesh_select_mode_orig
 
@@ -383,6 +394,33 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
                     new_obj.modifiers["Mirror"].use_y = True
                 if axis_index & 0x4:
                     new_obj.modifiers["Mirror"].use_z = True
+
+    # Set vertex normals.
+    bpy.ops.object.mode_set(mode='OBJECT')
+    vert_to_face_normals = {}
+    for mqo_face in mqo_faces:
+        if mqo_face.normals is not None:
+            for i, vidx in enumerate(mqo_face.vertex_indices):
+                if vidx not in vert_to_face_normals:
+                    vert_to_face_normals[vidx] = []
+                vert_to_face_normals[vidx].append(Vector(mqo_face.normals[i]))
+    if len(vert_to_face_normals) == len(mqo_verts):
+        vert_normals = []
+        for v in new_mesh.vertices:
+            vert_normal = Vector()
+            for normal in vert_to_face_normals[v.index]:
+                vert_normal += normal
+            vert_normal.normalize()
+            vert_normals.append(-vert_normal)
+        new_mesh.normals_split_custom_set_from_vertices(vert_normals)
+    else:
+        new_mesh.normals_split_custom_set_from_vertices(
+            [Vector((0, 0, 0)) for _ in new_mesh.vertices])
+
+    # Flip normals are requied to match between Blender and Metasequoia.
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.flip_normals()
+    bpy.ops.object.mode_set(mode='OBJECT')
 
     new_obj.delta_rotation_euler = (math.radians(90), 0, 0)
     new_obj.delta_scale = (0.01, 0.01, 0.01)
@@ -542,10 +580,12 @@ def attach_texture_to_material_v279(mqo_file, exclude_objects,
             else:
                 continue
 
-            # attch texture to material
-            texture_path = bpy.path.basename(
-                tex_layer.data[image_face.index].image.filepath)
-            mqo_file.get_materials()[mqo_mtrl_idx].texture_map = texture_path
+            if tex_layer.data[image_face.index].image is not None:
+                # attch texture to material
+                texture_path = bpy.path.basename(
+                    tex_layer.data[image_face.index].image.filepath)
+                mqo_mtrls = mqo_file.get_materials()
+                mqo_mtrls[mqo_mtrl_idx].texture_map = texture_path
 
         # edit mode -> object mode
         if bpy.ops.object.mode_set.poll():
@@ -590,6 +630,8 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
         if obj.name in exclude_objects:
             continue
 
+        bpy.ops.object.select_all(action='DESELECT')
+
         # copy object
         copied_obj = obj.copy()
         copied_obj.data = obj.data.copy()
@@ -606,9 +648,10 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
         for mod in copied_obj.modifiers:
             bpy.ops.object.modifier_apply(modifier=mod.name)
 
-        if bpy.ops.object.mode_set.poll():
-            # uv_layer.data requires object mode.
-            bpy.ops.object.mode_set(mode='OBJECT')
+        # Revert normal to match MQO format.
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.flip_normals()
+        bpy.ops.object.mode_set(mode='OBJECT')
 
         mqo_obj = mqo.Object()
         mqo_obj.name = obj.name
@@ -635,7 +678,7 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
                     mqo_face.uv_coords.append([uv[0], 1 - uv[1]])
             mqo_obj.add_face(mqo_face)
 
-        bpy.ops.object.editmode_toggle()    # object mode -> edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
 
         # Changing mesh select mode is required to reflect the material
         # assignments.
@@ -656,8 +699,8 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
 
             # Mode switch is required to reflect the selection result of
             # bpy.ops.object.material_slot_select()
-            bpy.ops.object.editmode_toggle()    # edit mode -> object mode
-            bpy.ops.object.editmode_toggle()    # object mode -> edit mode
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
 
             # find material index for mqo
             mqo_mtrl_idx = -1
@@ -693,6 +736,23 @@ def export_mqo_file(filepath, exclude_objects, exclude_materials,
 
             if has_vertex_attr:
                 mqo_obj.merge_vertexattr(mqo_vertex_attr)
+
+        # Vertex normals.
+        for i, mqo_face in enumerate(mqo_obj.get_faces()):
+            vert_normals = []
+            for vidx in mqo_face.vertex_indices:
+                # Minus normal to match MQO format.
+                vert_normals.append(-me.vertices[vidx].normal)
+
+            face_normal = Vector()
+            for normal in vert_normals:
+                face_normal += normal
+            face_normal.normalize()
+
+            face_normals = []
+            for _ in vert_normals:
+                face_normals.append(list(face_normal))
+            mqo_face.normals = face_normals
 
         # edit mode -> object mode
         if bpy.ops.object.mode_set.poll():
