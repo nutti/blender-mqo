@@ -1783,7 +1783,7 @@ class MqoFile:
         raise RuntimeError("Format Error: Failed to parse 'vertexattr' field.")
 
     def _parse_object(self, first_line):
-        r = re.compile(rb"Object \"([^\"]+)\" {")
+        r = re.compile(rb"Object \"*([^\"]+)\"* {")
         m = r.search(first_line)
         if not m or len(m.groups()) != 1:
             raise RuntimeError("Invalid format. (line:{})".format(first_line))

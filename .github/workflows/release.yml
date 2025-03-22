@@ -28,7 +28,7 @@ jobs:
           mv src/blender_mqo.zip release-github-release
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: blender_mqo-github-release
           path: "release-github-release"
@@ -53,7 +53,7 @@ jobs:
           mv tmp/src/blender_mqo.zip release-extensions.blender.org
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: blender_mqo-extensions.blender.org
           path: "release-extensions.blender.org"
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Fetch Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
       - name: Create Release
