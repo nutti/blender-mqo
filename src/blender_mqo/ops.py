@@ -373,7 +373,7 @@ def import_object(mqo_obj, materials, vertex_weight_import_options):
     # add mirror modifier
     if mqo_obj.mirror is not None:
         if MQO_TO_BLENDER_MIRROR_TYPE[mqo_obj.mirror] != 'NONE':
-            mirror_mod = new_obj.modifiers.new(type='MIRROR')
+            mirror_mod = new_obj.modifiers.new(name="Mirror", type='MIRROR')
             axis_index = mqo_obj.mirror_axis
             if compat.check_version(2, 80, 0) >= 0:
                 for i in mirror_mod.use_axis:
